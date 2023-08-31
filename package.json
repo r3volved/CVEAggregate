@@ -1,0 +1,11 @@
+{
+  "name": "CVEAggregate",
+  "version": "1.0.0",
+  "description": "Build a CVE library with aggregated CISA, EPSS and CVSS data",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "r3volved",
+  "license": "ISC"
+}
