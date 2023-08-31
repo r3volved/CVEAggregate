@@ -15,6 +15,12 @@ const cves = new CVEAggregate('/path/to/cves.json', verbose)
 
 ## Building the aggregate
 
+### Quick-build
+
+```sh
+$ node build /path/to/cves.json
+```
+
 The path provided to the constructor will load file if exists and will save updates to same location.
 
 The build process will collect all existing CVE Ids regardless of their state or age.
@@ -134,11 +140,11 @@ Example of the aggregated cves.json
 
 ```json
 {
-    "lastUpdated": "2023-08-31T14:48:29.142Z",
+    "lastUpdated": "2023-08-31T14:41:33.076Z",
     "cvesUpdated": null,
     "cisaUpdated": "2023-08-31T14:35:31.532Z",
     "epssUpdated": "2023-08-31T14:41:33.076Z",
-    "cvssUpdated": "2023-08-31T14:48:29.142Z",
+    "cvssUpdated": "2023-08-31T14:49:33.076Z",
     "lastCount": 216857,
     "cves": {
          "CVE-2018-4939": {
