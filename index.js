@@ -420,23 +420,7 @@ class CVEAggregate {
         }
     }
 
-    //Parse a line from the CISA-KEV - looking for CVE ids
-    parseKEVLine(line) {
-        if( !line?.match(/\"cveID\":/) ) return // Just captrue cve id's
-    
-        const cveId = line?.match?.(/(CVE-\d{4}-\d{4,})/)?.[0]
-        if( !cveId?.length ) return
-        if( !(cveId in this.cves) ) {
-            this.cves[cveId] = { cisa:null, epss:0, cvss2:null, cvss3:null }
-            this.newCVES.add(cveId)
-        }
-
-        if( !this.cves[cveId].cisa ) {
-            this.cves[cveId].cisa = true
-            this.newCISA.add(cveId)
-        }
-    }
-
+    //Parse the due date from CISA entry
     parseCISA(item) {
         const cveId = item?.cveID
         if( !cveId?.length ) return
@@ -536,40 +520,7 @@ class CVEAggregate {
         .finally(() => this.save())
     }
 
-    //Stream the CISA-KEV from cisa.gov and extract new entries
-    update_cisa2 (feedback=[], index=0) {
-        if( this.cisaUpdated?.length && diffInDays(this.cisaUpdated) < this.daysdiff ) 
-            return Promise.resolve(feedback[index] = `Updating CISA ... [skip]`)
-
-        const https    = require('node:https')
-        const readline = require('node:readline')
-        const cancelRequest = new AbortController()
-        return new Promise((resolve, reject) => {
-            https.get(this.#urlCISA, { signal: cancelRequest.signal }, (res) => {
-                const lastModified = res.headers['last-modified']
-                const lastUpdated  = this.cisaUpdated
-                if( lastModified?.length && new Date(lastModified) <= new Date(lastUpdated) ) {
-                    feedback[index] = `Updating CISA ... [skip]`
-                    cancelRequest.abort()
-                    return reject()
-                }
-
-                feedback[index] = `Updating CISA ... `
-                const readStream  = readline.createInterface({ input:res })
-                readStream.on('close', resolve)
-                readStream.on('error', reject)
-                readStream.on("line", line => this.parseKEVLine(line))
-                feedback[index] = `Updating CISA ... 100.0%`
-            })
-        })
-        .then(() => {
-            feedback[index] = `Updating CISA ... 100.0%`
-            this.cisaUpdated = (new Date()).toISOString()
-        })
-        .catch(e => this.log(e))
-        .finally(() => this.save())
-    }
-
+    //Fetch the CISA-KEV from cisa.gov and extract new entries
     update_cisa (feedback=[], index=0) {
         if( this.cisaUpdated?.length && diffInDays(this.cisaUpdated) < this.daysdiff ) 
             return Promise.resolve(feedback[index] = `Updating CISA ... [skip]`)

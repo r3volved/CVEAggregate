@@ -127,3 +127,33 @@ const cvss3 = cves.calculateCVSSVector("CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H
 //>   version: 'CVSS:3.1'
 //> }
 ```
+
+## Aggregate structure
+
+Example of the aggregated cves.json
+
+```json
+{
+    "lastUpdated": "2023-08-31T14:41:33.076Z",
+    "cvesUpdated": null,
+    "cisaUpdated": "2023-08-31T14:35:31.532Z",
+    "epssUpdated": "2023-08-31T14:41:33.076Z",
+    "cvssUpdated": null,
+    "lastCount": 216857,
+    "cves": {
+         "CVE-2018-4939": {
+            "cisa": "2022-05-03",
+            "epss": 0.97236,
+            "cvss2": "AV:N/AC:L/Au:N/C:C/I:C/A:C",
+            "cvss3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+        },
+        "CVE-2018-4878": {
+            "cisa": "2022-05-03",
+            "epss": 0.9742,
+            "cvss2": "AV:N/AC:L/Au:N/C:P/I:P/A:P",
+            "cvss3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+        },
+        ...
+    }
+}
+```
