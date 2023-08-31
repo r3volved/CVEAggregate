@@ -1,5 +1,5 @@
 {
-  "name": "CVEAggregate",
+  "name": "cveaggregate",
   "version": "1.0.0",
   "description": "Build a CVE library with aggregated CISA, EPSS and CVSS data",
   "main": "index.js",
