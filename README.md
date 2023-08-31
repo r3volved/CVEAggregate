@@ -9,33 +9,35 @@ Build a CVE library with aggregated CISA, EPSS and CVSS data
 const verbose = true
 const CVEAggregate = require('.')
 
-//If verbose, will log stuff to console
+/* If verbose, will log stuff to console */
 const cves = new CVEAggregate('/path/to/cves.json', verbose)
 ```
 
 ## Building the aggregate
 
-The path provided to the constructor will load file if exists and will save updates to same location.
-The build process will collect all existing CVE Ids regardless of their state or age.
-The update process will collect onlt the CVE Ids that have associated aggregate data (epps, cvss, cisa).
+- The path provided to the constructor will load file if exists and will save updates to same location.
+- The build process will collect all existing CVE Ids regardless of their state or age.
+- The update process will collect only the CVE Ids that have associated aggregate data (epps, cvss, cisa).
 
-Once the initial aggregate has been created, subsequent build or update calls will only collect new items since last save.
+Note: *Once the initial aggregate has been created, subsequent build or update calls will only collect new items since last save.*
 
 ```js
-//Build full list 
+/* Build full list */
 await cves.build()
 
-//Build short list
+/* Build short list */
 await cves.update()
 
-//List new items since last load, plus aggregate totals and details
-cves.report()   //This will also log if verbose
-cves.dump()     //This will just return file structure
+/* List new items since last load, plus aggregate totals and details */
+cves.report() 
 
-//Force save
+/* Return the full json aggregate */
+const data = cves.dump()     
+
+/* Force save (to the filepath provided) */
 cves.save()
 
-//Force reload
+/* Force load (from the filepath provided) */
 cves.load()
 ```
 
@@ -46,19 +48,22 @@ Helper functions are provided to help access and reference the aggregate
 ```js
 const listOfCves = ['CVE-2023-35390','CVE-2023-35391','CVE-2023-38180']
 
-//Check one or more CVE Ids if (any) in the CISA KEV
+/* Check one or more CVE Ids if (any) in the CISA KEV */
 const inKEV = cves.getCISA(...listOfCves)   
 //> true
 
-//Get the scaled EPSS score for one or more CVE Ids
+/* Get the scaled EPSS score for one or more CVE Ids */
 const epss = cves.getEPSS(...listOfCves)    
 //> 0.011580786319263958
 
-//Get the maximum CVSS score across one or more CVE Ids
+/* Get the maximum CVSS score across one or more CVE Ids */
 const cvss = cves.getCVSS(...listOfCves)    
 //> 7.8
+```
 
-//Get mapping of CVE Id -to- value
+Get the full mapping of CVE Ids -to- values
+
+```js
 const cisaMap = cves.mapCISA(...listOfCves) 
 //> { 
 //>   'CVE-2023-35390': null, 
