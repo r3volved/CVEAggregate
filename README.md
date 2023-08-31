@@ -1,9 +1,9 @@
 # CVEAggregate
 Build a CVE library with aggregated CISA, EPSS and CVSS data
 
-- CISA Values : The remediation due date (or null)
-- EPSS Values : The EPSS probability score (or 0)
-- CVSS Values : V2 and/or V3 vector strings (or null)
+- **CISA Values** : The remediation due date (or null)
+- **EPSS Values** : The EPSS probability score (or 0)
+- **CVSS Values** : V2 and/or V3 vector strings (or null)
 
 ```js
 const verbose = true
@@ -15,9 +15,11 @@ const cves = new CVEAggregate('/path/to/cves.json', verbose)
 
 ## Building the aggregate
 
-- The path provided to the constructor will load file if exists and will save updates to same location.
-- The build process will collect all existing CVE Ids regardless of their state or age.
-- The update process will collect only the CVE Ids that have associated aggregate data (epps, cvss, cisa).
+The path provided to the constructor will load file if exists and will save updates to same location.
+
+The build process will collect all existing CVE Ids regardless of their state or age.
+
+The update process will collect only the CVE Ids that have associated aggregate data (epps, cvss, cisa).
 
 Note: *Once the initial aggregate has been created, subsequent build or update calls will only collect new items since last save.*
 
