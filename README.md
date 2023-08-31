@@ -134,11 +134,11 @@ Example of the aggregated cves.json
 
 ```json
 {
-    "lastUpdated": "2023-08-31T14:41:33.076Z",
+    "lastUpdated": "2023-08-31T14:48:29.142Z",
     "cvesUpdated": null,
     "cisaUpdated": "2023-08-31T14:35:31.532Z",
     "epssUpdated": "2023-08-31T14:41:33.076Z",
-    "cvssUpdated": null,
+    "cvssUpdated": "2023-08-31T14:48:29.142Z",
     "lastCount": 216857,
     "cves": {
          "CVE-2018-4939": {
