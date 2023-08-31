@@ -9,7 +9,7 @@ const diffInDays = (date1, date2 = Date.now()) => {
     return Difference_In_Days
 }
 
-class CVES { 
+class CVEAggregate { 
     #urlCVES = "https://cve.mitre.org/data/downloads/allitems.csv"
     #urlCISA = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
     #urlEPSS = "https://api.first.org/data/v1/epss"
@@ -120,11 +120,6 @@ class CVES {
             cvssUpdated:this.cvssUpdated,
             lastCount:Object.keys(this.cves).length,
             cves:this.cves,
-            newCVES:this.newCVES,
-            newCISA:this.newCISA,
-            newEPSS:this.newEPSS,
-            newCVSS2:this.newCVSS2,
-            newCVSS3:this.newCVSS3,
         }
     }
 
@@ -173,17 +168,24 @@ class CVES {
         if( reportZero || this.newCVES.size || this.newCISA.size || this.newEPSS.size || this.newCVSS2.size || this.newCVSS3.size )
             this.log(`-`.repeat(30))
 
-        this.log(`Total CVEs:         ${Object.keys(this.cves).length.toLocaleString()}`)
-        this.log(`Total CISA entries: ${Object.values(this.cves).filter(i => i.cisa).length.toLocaleString()}`)
-        this.log(`Total EPSS scores:  ${Object.values(this.cves).filter(i => i.epss).length.toLocaleString()}`)
-        this.log(`Total CVSS vectors: ${Object.values(this.cves).filter(i => i.cvss2 || i.cvss3).length.toLocaleString()}`)
-        return { 
-            newCVES:this.newCVES,
-            newCISA:this.newCISA,
-            newEPSS:this.newEPSS,
-            newCVSS2:this.newCVSS2,
-            newCVSS3:this.newCVSS3,
-        }
+        const data = this.dump()
+
+        data.newCVES = this.newCVES
+        data.newCISA = this.newCISA
+        data.newEPSS = this.newEPSS
+        data.newCVSS2 = this.newCVSS2
+        data.newCVSS3 = this.newCVSS3
+        data.totalCVES = Object.keys(this.cves).length
+        data.totalCISA = Object.values(this.cves).filter(i => i.cisa).length
+        data.totalEPSS = Object.values(this.cves).filter(i => i.epss).length
+        data.totalCVSS = Object.values(this.cves).filter(i => i.cvss2 || i.cvss3).length
+
+        this.log(`Total CVEs:         ${data.totalCVES.toLocaleString()}`)
+        this.log(`Total CISA entries: ${data.totalCISA.toLocaleString()}`)
+        this.log(`Total EPSS scores:  ${data.totalEPSS.toLocaleString()}`)
+        this.log(`Total CVSS vectors: ${data.totalCVSS.toLocaleString()}`)
+        
+        return data
     }
 
     
@@ -750,5 +752,5 @@ class CVES {
     }
 }
 
-module.exports = CVES
+module.exports = CVEAggregate
 
