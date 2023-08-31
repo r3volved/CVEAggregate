@@ -1,10 +1,9 @@
 # CVEAggregate
 Build a CVE library with aggregated CISA, EPSS and CVSS data
 
-CISA Values : The remediation due date (or null)
-EPSS Values : The EPSS probability score (or 0)
-CVSS Values : V2 and/or V3 vector strings (or null)
-
+- CISA Values : The remediation due date (or null)
+- EPSS Values : The EPSS probability score (or 0)
+- CVSS Values : V2 and/or V3 vector strings (or null)
 
 ```js
 const verbose = true
