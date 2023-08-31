@@ -15,9 +15,8 @@ const cves = new CVEAggregate('/path/to/cves.json', verbose)
 
 ## Building the aggregate
 
-### Quick-build
-
 ```sh
+# Quick-build
 $ node build /path/to/cves.json
 ```
 
