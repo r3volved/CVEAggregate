@@ -91,7 +91,8 @@ const cvssMap = cves.mapCVSS(...listOfCves)
 ## Calculations
 
 The aggregate uses CVSS vectors and calculates the CVSS scores as needed
-This allows the ability to manipulate the vectors with optional temporal and environmental metrics 
+
+This allows the ability to manipulate vectors with optional temporal and environmental metrics 
 
 ```js
 //Calculate a CVSSv2 vector details
