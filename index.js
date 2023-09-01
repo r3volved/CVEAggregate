@@ -2,7 +2,7 @@ const { writeFileSync, readFileSync, existsSync } = require('fs')
 
 const path = require('path')
 
-const { CVSS } = require(path.join(__dirname, 'cvss.js'))
+const CVSS = require(path.join(__dirname, 'cvss.js'))
 
 const diffInDays = (date1, date2 = Date.now()) => {
     const last = new Date(date1)
@@ -133,11 +133,6 @@ class CVEAggregate {
         this.log(`Total CVSS vectors: ${data.totalCVSS.toLocaleString()}`)
         
         return data
-    }
-
-    //Calculate a CVSS scoring from a vector string 
-    calculateCVSSVector(vectorString) {
-        return this.#CVSS.calculateFromVector(vectorString)
     }
 
     //Return true if any cve is in CISA
@@ -479,6 +474,19 @@ class CVEAggregate {
         })
     }
 
+
+
+    //Calculate a CVSS scoring from a vector string 
+    calculateCVSS(vectorString) {
+        return this.#CVSS.calculate(vectorString)
+    }
+
+    //Describe a CVSS vector or metrics object
+    describeCVSS(vectorOrMetrics) {
+        return this.#CVSS.describe(vectorOrMetrics)
+    }
+
+    
 }
 
 module.exports = CVEAggregate

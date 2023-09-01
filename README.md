@@ -101,7 +101,7 @@ This allows the ability to manipulate vectors with optional temporal and environ
 
 ```js
 //Calculate a CVSSv2 vector details
-const cvss2 = cves.calculateCVSSVector("AV:N/AC:L/Au:N/C:C/I:C/A:C")
+const cvss2 = cves.calculateCVSS("AV:N/AC:L/Au:N/C:C/I:C/A:C")
 //> {
 //>   baseMetricScore: 7.2,
 //>   baseSeverity: 'High',
@@ -118,7 +118,7 @@ const cvss2 = cves.calculateCVSSVector("AV:N/AC:L/Au:N/C:C/I:C/A:C")
 //> }
 
 //Calculate a CVSSv3 vector details
-const cvss3 = cves.calculateCVSSVector("CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H")
+const cvss3 = cves.calculateCVSS("CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H")
 //> {
 //>   baseMetricScore: 7.8,
 //>   baseSeverity: 'High',

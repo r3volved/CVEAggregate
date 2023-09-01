@@ -31,6 +31,40 @@ class CVSS2 {
             { name: "High", bottom: 7.0, top: 8.9 }, 
             { name: "Critical", bottom: 9.0, top: 10.0 }
         ]
+
+        this.metricKeys = this.baseKeys.concat( this.temporalKeys ).concat( this.environmentKeys )
+        this.metricNames = {
+            AV:  'Attack Vector',
+            AC:  'Attack Complexity',
+            Au:  'Authentication',
+            C:   'Confidentiality',
+            I:   'Integrity',
+            A:   'Availability',
+            E:   'Exploitability',
+            RL:  'Remediation Level',
+            RC:  'Report Confidence',
+            CDP: 'Collateral Damage Potential',
+            TD:  'Target Distribution',
+            CR:  'Confidentiality Requirement',
+            IR:  'Integrity Requirement',
+            AR:  'Availability Requirement',
+        }
+        this.metricValues = {
+            AV:   { N: "NETWORK", A: "ADJACENT_NETWORK", L: "LOCAL" },
+            AC:   { H: "HIGH", M: "MEDIUM", L: "LOW" },
+            Au:   { N: "NONE", S: "SINGLE", M: "MULTIPLE" },
+            C:    { N: "NONE", P: "PARTIAL", C: "COMPLETE" },
+            I:    { N: "NONE", P: "PARTIAL", C: "COMPLETE" },
+            A:    { N: "NONE", P: "PARTIAL", C: "COMPLETE" },            
+            E:    { ND: "NOT_DEFINED", U: "UNPROVEN", POC: "PROOF_OF_CONCEPT", F: "FUNCTIONAL", H: "HIGH" },
+            RL:   { ND: "NOT_DEFINED", OF: "OFFICIAL_FIX", TF: "TEMPORARY_FIX", W: "WORKAROUND", U: "UNAVAILABLE" },
+            RC:   { ND: "NOT_DEFINED", UC: "UNCONFIRMED", UR: "UNCORROBORATED", C: "CONFIRMED" },
+            CDP:  { ND: "NOT_DEFINED", N: "NONE", L: "LOW", LM: "LOW_MEDIUM", M: "MEDIUM", H: "HIGH" },
+            TD:   { ND: "NOT_DEFINED", N: "NONE", L: "LOW", M: "MEDIUM", H: "HIGH" },
+            CR:   { ND: "NOT_DEFINED", L: "LOW", M: "MEDIUM", H: "HIGH" },
+            IR:   { ND: "NOT_DEFINED", L: "LOW", M: "MEDIUM", H: "HIGH" },
+            AR:   { ND: "NOT_DEFINED", L: "LOW", M: "MEDIUM", H: "HIGH" },
+        }
     }
 
     error(reason) {
@@ -76,7 +110,11 @@ class CVSS2 {
         const modifiedTemporal = modifiedBase * value("E") * value("RL") * value("RC")
         const envScore  = (modifiedTemporal + (10 - modifiedTemporal) * value("CDP")) * value("TD")
 
-        const vectorString = this.baseKeys.concat( this.temporalKeys ).concat( this.environmentKeys ).map(key => `${key}:${metricValues[key]||"ND"}`).join("/")
+        const vectorString = this.baseKeys
+            .concat( this.temporalKeys )
+            .concat( this.environmentKeys )
+            .map(key => `${key}:${metricValues[key]||"ND"}`)
+            .join("/")
         
         return {
             baseMetricScore: Number(baseScore.toFixed(1)),
@@ -90,7 +128,8 @@ class CVSS2 {
             environmentalModifiedImpact: modifiedImpact,
             metricValues,
             vectorString,
-            version:this.version
+            version:this.version,
+            adjust:(metrics={}) => this.calculateFromMetrics( Object.assign(metricValues, metrics) )
         }
     }
 
@@ -106,6 +145,40 @@ class CVSS2 {
         },{})
     
         return this.calculateFromMetrics(metricValues)
+    }
+
+    describe(vectorOrMetrics) {
+        return typeof vectorOrMetrics === 'string'
+            ? this.describeVector(vectorOrMetrics)
+            : this.describeMetrics(vectorOrMetrics)
+    }
+
+    describeVector(vectorString) {
+        if( typeof vectorString !== 'string' || !vectorString?.length ) 
+            throw new Error('CVSS vector string required')
+
+        if( !this.#vectorRegex.test(vectorString) ) 
+            return this.error("Malformed V2 Vector String")
+
+        const vectorMatches = vectorString.match(this.#vectorPattern)
+        const metricValues = vectorMatches.reduce((acc,m) => {
+            const [key, val] = m.split(':')
+            if( key && val ) acc[key] = val
+            return acc
+        },{})
+    
+        return this.describeMetrics(metricValues)
+    }
+
+    describeMetrics(metricValues) {
+        if( typeof metricValues !== 'object' ) 
+            throw new Error('Metrics object required')
+
+        return this.metricKeys.reduce((acc,key) => {
+            acc[this.metricNames[key]] = this.metricValues[key][metricValues[key]]
+            return acc
+        },{})
+    
     }
 }
 
@@ -138,6 +211,60 @@ class CVSS3 {
             { name: "High", bottom: 7.0, top: 8.9 }, 
             { name: "Critical", bottom: 9.0, top: 10.0 }
         ]
+        this.metricKeys = ['AV','AC','PR','UI','S','C','I','A','E','RL','RC','CR','IR','AR','MAV','MAC','MPR','MUI','MS','MC','MI','MA']
+        this.metricNames = {
+            AV:  'Attack Vector',
+            AC:  'Attack Complexity',
+            PR:  'Privileges Required',
+            UI:  'User Interaction',
+            S:   'Scope',
+            C:   'Confidentiality',
+            I:   'Integrity',
+            A:   'Availability',
+            E:   'Exploit Code Maturity',
+            RL:  'Remediation Level',
+            RC:  'Report Confidence',
+            CR:  'Confidentiality Requirement',
+            IR:  'Integrity Requirement',
+            AR:  'Availability Requirement',
+            MAV: 'Modified Attack Vector',
+            MAC: 'Modified Attack Complexity',
+            MPR: 'Modified Privileges Required',
+            MUI: 'Modified User Interaction',
+            MS:  'Modified Scope',
+            MC:  'Modified Confidentiality',
+            MI:  'Modified Integrity',
+            MA:  'Modified Availability'
+        }
+        this.metricValues = {
+            E:    { X: "NOT_DEFINED", U: "UNPROVEN", P: "PROOF_OF_CONCEPT", F: "FUNCTIONAL", H: "HIGH" },
+            RL:   { X: "NOT_DEFINED", O: "OFFICIAL_FIX", T: "TEMPORARY_FIX", W: "WORKAROUND", U: "UNAVAILABLE" },
+            RC:   { X: "NOT_DEFINED", U: "UNKNOWN", R: "REASONABLE", C: "CONFIRMED" },
+            CIAR: { X: "NOT_DEFINED", L: "LOW", M: "MEDIUM", H: "HIGH" },
+            MAV:  { X: "NOT_DEFINED", N: "NETWORK", A: "ADJACENT_NETWORK", L: "LOCAL", P: "PHYSICAL" },
+            MAC:  { X: "NOT_DEFINED", H: "HIGH", L: "LOW" },
+            MPR:  { X: "NOT_DEFINED", N: "NONE", L: "LOW", H: "HIGH" },
+            MUI:  { X: "NOT_DEFINED", N: "NONE", R: "REQUIRED" },
+            MS:   { X: "NOT_DEFINED", U: "UNCHANGED", C: "CHANGED" },
+            MCIA: { X: "NOT_DEFINED", N: "NONE", L: "LOW", H: "HIGH" },
+            /*duplicates*/
+            C:    { X: "NOT_DEFINED", L: "LOW", M: "MEDIUM", H: "HIGH" },
+            R:    { X: "NOT_DEFINED", L: "LOW", M: "MEDIUM", H: "HIGH" },
+            CR:   { X: "NOT_DEFINED", L: "LOW", M: "MEDIUM", H: "HIGH" },
+            IR:   { X: "NOT_DEFINED", L: "LOW", M: "MEDIUM", H: "HIGH" },
+            AR:   { X: "NOT_DEFINED", L: "LOW", M: "MEDIUM", H: "HIGH" },
+            AV:   { N: "NETWORK", A: "ADJACENT_NETWORK", L: "LOCAL", P: "PHYSICAL" },
+            AC:   { H: "HIGH", L: "LOW" },
+            PR:   { N: "NONE", L: "LOW", H: "HIGH" },
+            UI:   { N: "NONE", R: "REQUIRED" },
+            S:    { U: "UNCHANGED", C: "CHANGED" },
+            I:    { L: "LOW", M: "MEDIUM", H: "HIGH" },
+            A:    { L: "LOW", M: "MEDIUM", H: "HIGH" },
+            MC:   { X: "NOT_DEFINED", N: "NONE", L: "LOW", H: "HIGH" },
+            MI:   { X: "NOT_DEFINED", N: "NONE", L: "LOW", H: "HIGH" },
+            MA:   { X: "NOT_DEFINED", N: "NONE", L: "LOW", H: "HIGH" },
+        }        
+
     }
 
     error(reason, version = this.version) {
@@ -246,7 +373,8 @@ class CVSS3 {
             environmentalModifiedImpact: modifiedImpact,
             metricValues,
             vectorString,
-            version
+            version,
+            adjust:(metrics={}) => this.calculateFromMetrics( Object.assign(metricValues, metrics), version )
         }
     }
 
@@ -266,6 +394,45 @@ class CVSS3 {
 
         return this.calculateFromMetrics(metricValues, version)
     }
+
+    describe(vectorOrMetrics) {
+        return typeof vectorOrMetrics === 'string'
+            ? this.describeVector(vectorOrMetrics)
+            : this.describeMetrics(vectorOrMetrics)
+    }
+
+    describeVector(vectorString) {
+        if( typeof vectorString !== 'string' || !vectorString?.length ) 
+            throw new Error('CVSS vector string required')
+
+        if( !this.#vectorRegex.test(vectorString) ) 
+            return this.error("Malformed V3.x Vector String")
+
+        const version = vectorString.match(/CVSS:3(\.\d){0,1}/)[0]
+        const metricNameValue = vectorString.substring(version.length).split("/").slice(1)
+        const metricValues = {}
+
+        for( const i in metricNameValue ) {
+            if( !metricNameValue.hasOwnProperty(i) ) continue
+            const singleMetric = metricNameValue[i].split(":")
+            metricValues[singleMetric[0]] = singleMetric[1]
+        }
+    
+        return this.describeMetrics(metricValues, version)
+    }
+
+    describeMetrics(metricValues, version = this.version) {
+        if( typeof metricValues !== 'object' ) 
+            throw new Error('Metrics object required')
+
+        if( !metricValues.AV || !metricValues.AC || !metricValues.PR || !metricValues.UI || !metricValues.S || !metricValues.C || !metricValues.I || !metricValues.A ) 
+            return this.error("Malformed V3.x Metrics")
+
+        return this.metricKeys.reduce((acc,key) => {
+            acc[this.metricNames[key]] = this.metricValues[key][metricValues[key]]
+            return acc
+        },{})
+    }
 }
 
 class CVSS {
@@ -273,11 +440,50 @@ class CVSS {
         this.v2 = new CVSS2()
         this.v3 = new CVSS3()
     }
-    calculateFromVector(vectorString) {
+
+    calculate(vectorOrMetrics) {
+        return typeof vectorOrMetrics === 'string'
+            ? this.calculateFromVector(vectorOrMetrics)
+            : this.calculateFromMetrics(vectorOrMetrics)
+    }
+    calculateFromVector(vectorString = '') {
+        if( typeof vectorString !== 'string' || !vectorString?.length ) 
+            throw new Error('CVSS vector string required')
+
         return !vectorString.startsWith('CVSS:3') || vectorString.match(/Au:[MSN]/) 
             ? this.v2.calculateFromVector(vectorString)
             : this.v3.calculateFromVector(vectorString)
     }
+    calculateFromMetrics(metricValues = {}) {
+        if( typeof metricValues !== 'object' ) 
+            throw new Error('Metrics object required')
+
+        return metricValues.hasOwnProperty("Au")
+            ? this.v2.calculateFromMetrics(metricValues)
+            : this.v3.calculateFromMetrics(metricValues)
+    }
+
+    describe(vectorOrMetrics) {
+        return typeof vectorOrMetrics === 'string'
+            ? this.describeVector(vectorOrMetrics)
+            : this.describeMetrics(vectorOrMetrics)
+    }
+    describeVector(vectorString = '') {
+        if( typeof vectorString !== 'string' || !vectorString?.length ) 
+            throw new Error('CVSS vector string required')
+
+        return !vectorString.startsWith('CVSS:3') || vectorString.match(/Au:[MSN]/)
+            ? this.v2.describeVector(vectorString)
+            : this.v3.describeVector(vectorString)
+    }
+    describeMetrics(metricValues = {}) {
+        if( typeof metricValues !== 'object' ) 
+            throw new Error('Metrics object required')
+
+        return metricValues.hasOwnProperty("Au")
+            ? this.v2.describeMetrics(metricValues)
+            : this.v3.describeMetrics(metricValues)
+    }
 }
 
-module.exports = { CVSS, CVSS2, CVSS3 }
+module.exports = CVSS
