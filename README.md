@@ -112,7 +112,8 @@ const cvss2 = cves.calculateCVSSVector("AV:N/AC:L/Au:N/C:C/I:C/A:C")
 //>   environmentalMetricScore: 7.2,
 //>   environmentalSeverity: 'High',
 //>   environmentalModifiedImpact: 10,
-//>   vectorString: 'AV:N/AC:L/Au:N/C:C/I:C/A:C',
+//>   metricValues: { AV:'N', AC:'L', Au:'N', C:'C', I:'C', A:'C' },
+//>   vectorString: 'AV:N/AC:L/Au:N/C:C/I:C/A:C/E:ND/RL:ND/RC:ND/CDP:ND/TD:ND/CR:ND/IR:ND/AR:ND',
 //>   version: 'CVSS:2'
 //> }
 
@@ -128,7 +129,8 @@ const cvss3 = cves.calculateCVSSVector("CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H
 //>   environmentalMetricScore: 7.8,
 //>   environmentalSeverity: 'High',
 //>   environmentalModifiedImpact: 5.873118720000001,
-//>   vectorString: 'CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H',
+//>   metricValues: { AV:'L', AC:'L', PR:'N', UI:'R', S:'U', C:'H', I:'H', A:'H' },
+//>   vectorString: 'CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H/E:X/RL:X/RC:X/CR:X/IR:X/AR:X/MAV:X/MAC:X/MPR:X/MUI:X/MS:X/MC:X/MI:X/MA:X',
 //>   version: 'CVSS:3.1'
 //> }
 ```
