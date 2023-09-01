@@ -12,6 +12,22 @@ const diffInDays = (date1, date2 = Date.now()) => {
     return Difference_In_Days
 }
 
+const compare = (val, option, format) => {
+    const key = Object.keys(option||{})[0]
+    return !key ? false : typeof format === 'function'
+        ? compareFunc[key]( format(val), format(option[key]) )
+        : compareFunc[key]( val, option[key] )
+}
+
+const compareFunc = {
+    gt: (v1, v2) => v1 > v2,
+    gte:(v1, v2) => v1 >= v2,
+    lt: (v1, v2) => v1 < v2,
+    lte:(v1, v2) => v1 <= v2,
+    eq: (v1, v2) => v1 === v2,
+    ne: (v1, v2) => v1 !== v2,
+}
+
 class CVEAggregate { 
     #urlCVES = "https://cve.mitre.org/data/downloads/allitems.csv"
     #urlCISA = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
@@ -445,6 +461,8 @@ class CVEAggregate {
         .finally(() => this.save())
     }
     
+    /* Generate aggregate source */
+
     //Build with full CVE list
     async build() {
         const feedback = new Array(4).fill('...')
@@ -475,6 +493,7 @@ class CVEAggregate {
     }
 
 
+    /* Helper tools and calculators */
 
     //Calculate a CVSS scoring from a vector string 
     calculateCVSS(vectorString) {
@@ -486,6 +505,29 @@ class CVEAggregate {
         return this.#CVSS.describe(vectorOrMetrics)
     }
 
+    search(options={}) {
+        const critical = {}
+        for(const cveId in this.cves) {
+            const { cisa, epss, cvss2, cvss3 } = this.cves[cveId]
+
+            //First: Lightest compare
+            const matchEPSS = !options?.epss || compare(epss, options?.epss, (v) => Number(v))
+            if( !matchEPSS ) continue
+
+            //Second: Date conversions
+            const matchCISA = !options?.cisa || cisa && compare(cisa, options?.cisa, (v) => new Date(v).getTime())
+            if( !matchCISA ) continue
+
+            //Last: CVSS calculation
+            const score = this.calculateCVSS(cvss3 || cvss2)
+            const matchCVSS = !options?.cvss || compare(score.environmentalMetricScore, options?.cvss, (v) => Number(v))
+            if( !matchCVSS ) continue
+
+            //If here, we match, return the calculated cvss instead of any vectors
+            critical[cveId] = { cisa, epss, cvss:score.environmentalMetricScore }
+        }
+        return critical
+    }
     
 }
 

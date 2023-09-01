@@ -3,8 +3,8 @@
     const cves = new CVEAggregate(process.argv[2], true)
     const cveList = ['CVE-2023-35390','CVE-2023-35391','CVE-2023-38180']
 
-    // console.log('-'.repeat(30))
-    // await cves.build()
+    console.log('-'.repeat(30))
+    await cves.build()
 
     // console.log('-'.repeat(30))
     // await cves.update()        
@@ -29,10 +29,17 @@
     // //console.log({v2score, v2adjusted})
     // console.log(cves.describeCVSS(v2adjusted.vectorString))
     
+    // console.log('-'.repeat(30))
+    // let v3score = cves.calculateCVSS("CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H")
+    // let v3adjusted = v3score.adjust({ E:"F", CR:"H" })
+    // console.log({v3score, v3adjusted})
+    // console.log(cves.describeCVSS(v3adjusted.vectorString))
+
     console.log('-'.repeat(30))
-    let v3score = cves.calculateCVSS("CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H")
-    let v3adjusted = v3score.adjust({ E:"F", CR:"H" })
-    console.log({v3score, v3adjusted})
-    console.log(cves.describeCVSS(v3adjusted.vectorString))
+    console.log(cves.search({ 
+        epss:{ gt:0.7 }, 
+        cvss:{ gt:9.0 },
+        cisa:{ gte:'2023-09-01' }
+    }))
 
 })()

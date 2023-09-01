@@ -442,45 +442,35 @@ class CVSS {
     }
 
     calculate(vectorOrMetrics) {
+        vectorOrMetrics = vectorOrMetrics || ''
         return typeof vectorOrMetrics === 'string'
             ? this.calculateFromVector(vectorOrMetrics)
             : this.calculateFromMetrics(vectorOrMetrics)
     }
     calculateFromVector(vectorString = '') {
-        if( typeof vectorString !== 'string' || !vectorString?.length ) 
-            throw new Error('CVSS vector string required')
-
-        return !vectorString.startsWith('CVSS:3') || vectorString.match(/Au:[MSN]/) 
+        return !vectorString?.startsWith?.('CVSS:3') || vectorString?.match?.(/Au:[MSN]/) 
             ? this.v2.calculateFromVector(vectorString)
             : this.v3.calculateFromVector(vectorString)
     }
     calculateFromMetrics(metricValues = {}) {
-        if( typeof metricValues !== 'object' ) 
-            throw new Error('Metrics object required')
-
-        return metricValues.hasOwnProperty("Au")
+        return metricValues?.hasOwnProperty?.("Au")
             ? this.v2.calculateFromMetrics(metricValues)
             : this.v3.calculateFromMetrics(metricValues)
     }
 
     describe(vectorOrMetrics) {
+        vectorOrMetrics = vectorOrMetrics || ''
         return typeof vectorOrMetrics === 'string'
             ? this.describeVector(vectorOrMetrics)
             : this.describeMetrics(vectorOrMetrics)
     }
     describeVector(vectorString = '') {
-        if( typeof vectorString !== 'string' || !vectorString?.length ) 
-            throw new Error('CVSS vector string required')
-
-        return !vectorString.startsWith('CVSS:3') || vectorString.match(/Au:[MSN]/)
+        return !vectorString?.startsWith?.('CVSS:3') || vectorString?.match?.(/Au:[MSN]/)
             ? this.v2.describeVector(vectorString)
             : this.v3.describeVector(vectorString)
     }
     describeMetrics(metricValues = {}) {
-        if( typeof metricValues !== 'object' ) 
-            throw new Error('Metrics object required')
-
-        return metricValues.hasOwnProperty("Au")
+        return metricValues?.hasOwnProperty?.("Au")
             ? this.v2.describeMetrics(metricValues)
             : this.v3.describeMetrics(metricValues)
     }
