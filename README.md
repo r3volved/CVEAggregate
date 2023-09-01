@@ -93,6 +93,21 @@ const cvssMap = cves.mapCVSS(...listOfCves)
 //> }
 ```
 
+Search the aggregate with criteria (gt, gte, lt, lte, eq, ne)
+
+```js
+const critical = cves.search({ 
+    epss:{ gt:0.7 }, 
+    cvss:{ gt:9.0 },
+    cisa:{ gte:'2023-09-01' }
+})
+//> {
+//>   'CVE-2023-24489': { cisa: '2023-09-06', epss: 0.9673, cvss: 9.8 },
+//>   'CVE-2023-38035': { cisa: '2023-09-12', epss: 0.91817, cvss: 9.8 }
+//> }
+```
+
+
 ## Calculations
 
 The aggregate uses CVSS vectors and calculates the CVSS scores as needed
@@ -101,7 +116,7 @@ This allows the ability to manipulate vectors with optional temporal and environ
 
 ```js
 //Calculate a CVSSv2 vector details
-const cvss2 = cves.calculateCVSSVector("AV:N/AC:L/Au:N/C:C/I:C/A:C")
+const cvss2 = cves.calculateCVSS("AV:N/AC:L/Au:N/C:C/I:C/A:C")
 //> {
 //>   baseMetricScore: 7.2,
 //>   baseSeverity: 'High',
@@ -118,7 +133,7 @@ const cvss2 = cves.calculateCVSSVector("AV:N/AC:L/Au:N/C:C/I:C/A:C")
 //> }
 
 //Calculate a CVSSv3 vector details
-const cvss3 = cves.calculateCVSSVector("CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H")
+const cvss3 = cves.calculateCVSS("CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H")
 //> {
 //>   baseMetricScore: 7.8,
 //>   baseSeverity: 'High',
