@@ -4,6 +4,12 @@ const path = require('path')
 
 const CVSS = require(path.join(__dirname, 'cvss.js'))
 
+/**
+ * Get the difference between two dates (in days)
+ * @param  {Date}   date1    
+ * @param  {Date}   date2   Optional second date to use instead of current date
+ * @return {number} Difference in days (floating point)
+ */
 const diffInDays = (date1, date2 = Date.now()) => {
     const last = new Date(date1)
     const now  = new Date(date2)
@@ -12,20 +18,31 @@ const diffInDays = (date1, date2 = Date.now()) => {
     return Difference_In_Days
 }
 
+/**
+ * Compare a value against a condition (optional format func)
+ * @param  {*}      val     The value from the aggregate
+ * @param  {object} option  The condition to compare with
+ * @param  {func}   format  Optional formatting function for normalizing both sides of the condition
+ * @return {bool}   Whether the value matches the condition
+ */
 const compare = (val, option, format) => {
     const key = Object.keys(option||{})[0]
     return !key ? false : typeof format === 'function'
-        ? compareFunc[key]( format(val), format(option[key]) )
+        ? compareFunc[key]( val === null ? val : format(val), format(option[key]) )
         : compareFunc[key]( val, option[key] )
 }
 
+/** 
+ * Comparison functions mapped by key (gt,gte,lt,lte,eq,ne,neq)
+ */
 const compareFunc = {
-    gt: (v1, v2) => v1 > v2,
-    gte:(v1, v2) => v1 >= v2,
-    lt: (v1, v2) => v1 < v2,
-    lte:(v1, v2) => v1 <= v2,
-    eq: (v1, v2) => v1 === v2,
-    ne: (v1, v2) => v1 !== v2,
+    gt: (v1, v2) => v1 > v2,    //Greater than
+    gte:(v1, v2) => v1 >= v2,   //Greater than, or equal
+    lt: (v1, v2) => v1 < v2,    //Less than
+    lte:(v1, v2) => v1 <= v2,   //Less than, or equal
+    eq: (v1, v2) => v1 === v2,  //Is equal
+    ne: (v1, v2) => v1 !== v2,  //Not equal
+    neq:(v1, v2) => v1 !== v2,  //Same as ne
 }
 
 class CVEAggregate { 
@@ -49,10 +66,12 @@ class CVEAggregate {
         this.load()
     }
 
-    //Log to console
-    //- Array of lines will update
-    //- Error will dump stack
-    //- Any other value will new line
+    /**
+     * Log to console
+     * @param {array}   lines a list of strings to replace the last n-lines in console if the last log was array
+     * @param {Error}   lines an error object to throw in console
+     * @param {any}     lines any other value/type to log in console
+     */
     log(lines) {
         if( !this.verbose ) return
         if( lines === undefined ) return
@@ -73,7 +92,10 @@ class CVEAggregate {
         }
     }
 
-    //Dump internal details
+    /**
+     * Dump internal details
+     * @return {object} contents of the current cve json
+     */
     dump() {
         return {
             lastUpdated:this.lastUpdated,
@@ -86,16 +108,21 @@ class CVEAggregate {
         }
     }
 
-    //Save current cves to filepath
+    /**
+     * Save current cves to filepath
+     */
     save() {
         this.lastUpdated = (new Date()).toISOString()
         writeFileSync(this.filepath, JSON.stringify(this.dump()), 'utf8')
     }
 
-    //Load cves from a filepath
+    /**
+     * Load cves from a filepath
+     */
     load() {
         try { 
             if( !existsSync(this.filepath) ) throw new Error('No cve list')
+            //Load the content of last save
             const json = JSON.parse(readFileSync(this.filepath, 'utf8')) 
             this.cves        = json.cves        || this.cves
             this.lastUpdated = json.lastUpdated || this.lastUpdated
@@ -105,14 +132,16 @@ class CVEAggregate {
             this.epssUpdated = json.epssUpdated || this.epssUpdated
             this.cvssUpdated = json.cvssUpdated || this.cvssUpdated
         } catch(e) { 
-            this.cves        = this.cves        || {}
-            this.lastUpdated = this.lastUpdated || null
-            this.lastCount   = this.lastCount   || null
-            this.cvesUpdated = this.cvesUpdated || null
-            this.cisaUpdated = this.cisaUpdated || null
-            this.epssUpdated = this.epssUpdated || null
-            this.cvssUpdated = this.cvssUpdated || null
+            //No file or error loading, create fresh
+            this.cves        = this.cves        || {}   
+            this.lastUpdated = this.lastUpdated || null 
+            this.lastCount   = this.lastCount   || null 
+            this.cvesUpdated = this.cvesUpdated || null 
+            this.cisaUpdated = this.cisaUpdated || null 
+            this.epssUpdated = this.epssUpdated || null 
+            this.cvssUpdated = this.cvssUpdated || null 
         }
+        //reset the new item counters
         this.newCVES  = new Set()
         this.newCISA  = new Set()
         this.newEPSS  = new Set()
@@ -120,24 +149,28 @@ class CVEAggregate {
         this.newCVSS3 = new Set()
     }
 
-    //Report update details since last load
+    /**
+     * Report update details since last load
+     * @return {object} collection of data details
+     */
     report(reportZero) {
         if( reportZero || this.newCVES.size )  this.log(`Found ${this.newCVES.size.toLocaleString()} new CVEs`)
         if( reportZero || this.newCISA.size )  this.log(`Found ${this.newCISA.size.toLocaleString()} new CISA entries`)
         if( reportZero || this.newEPSS.size )  this.log(`Found ${this.newEPSS.size.toLocaleString()} new EPSS scores`)
         if( reportZero || this.newCVSS2.size ) this.log(`Found ${this.newCVSS2.size.toLocaleString()} new CVSSv2 vectors`)
         if( reportZero || this.newCVSS3.size ) this.log(`Found ${this.newCVSS3.size.toLocaleString()} new CVSSv3 vectors`)
-        
+        //If anything found, add a divider line
         if( reportZero || this.newCVES.size || this.newCISA.size || this.newEPSS.size || this.newCVSS2.size || this.newCVSS3.size )
             this.log(`-`.repeat(30))
 
+        //Collect and return details in one object
         const data = this.dump()
 
-        data.newCVES = this.newCVES
-        data.newCISA = this.newCISA
-        data.newEPSS = this.newEPSS
-        data.newCVSS2 = this.newCVSS2
-        data.newCVSS3 = this.newCVSS3
+        data.newCVES   = this.newCVES
+        data.newCISA   = this.newCISA
+        data.newEPSS   = this.newEPSS
+        data.newCVSS2  = this.newCVSS2
+        data.newCVSS3  = this.newCVSS3
         data.totalCVES = Object.keys(this.cves).length
         data.totalCISA = Object.values(this.cves).filter(i => i.cisa).length
         data.totalEPSS = Object.values(this.cves).filter(i => i.epss).length
@@ -151,7 +184,11 @@ class CVEAggregate {
         return data
     }
 
-    //Return true if any cve is in CISA
+    /**
+     * Search one or more CVEs to see if they're in the CISA KEV
+     * @param {...string} cveIds    CVE ids to search against
+     * @return {bool} true if any cve is in CISA
+     */
     getCISA(...cveIds) {
         for(const cveId of cveIds) {
             if( this.cves[cveId]?.cisa?.length ) return true
@@ -159,7 +196,11 @@ class CVEAggregate {
         return false
     }
 
-    //Map CISA by cveId
+    /**
+     * Map the CISA due dates to one or more CVEs
+     * @param {...string} cveIds    CVE ids to search against
+     * @return {object} due dates keyed by CVE id
+     */
     mapCISA(...cveIds) { 
         return cveIds.reduce((map,cveId) => {
             map[cveId] = this.cves[cveId]?.cisa || null
@@ -167,12 +208,20 @@ class CVEAggregate {
         },{})
     }
     
-    //Return the scaled epss score of all cves
+    /**
+     * Get the scaled EPSS score of one or more CVEs
+     * @param {...string} cveIds    CVE ids to search against
+     * @return {number} EPSS score
+     */
     getEPSS(...cveIds) {
         return (1 - cveIds.map(cveId => this.cves[cveId]?.epss || 0).filter(v => v).reduce((p,v) => p * (1-v),1))
     }
 
-    //Map EPSS by cveId
+    /**
+     * Map the EPSS score to one or more CVEs
+     * @param {...string} cveIds    CVE ids to search against
+     * @return {object} EPSS scores keyed by CVE id
+     */
     mapEPSS(...cveIds) { 
         return cveIds.reduce((map,cveId) => {
             map[cveId] = this.cves[cveId]?.epss || 0
@@ -180,7 +229,11 @@ class CVEAggregate {
         },{})
     }
 
-    //Return the max cvss score of all cves
+    /**
+     * Get the maximum CVSS score of one or more CVEs
+     * @param {...string} cveIds    CVE ids to search against
+     * @return {number} CVSS score
+     */
     getCVSS(...cveIds) {
         return cveIds.reduce((max,cveId) => {
             const score = this.#CVSS.calculateFromVector(this.cves[cveId]?.cvss3 || this.cves[cveId]?.cvss2)
@@ -188,7 +241,11 @@ class CVEAggregate {
         },0)
     }
 
-    //Map CVSS by cveId (v3 if exists, else v2)
+    /**
+     * Map the CVSS score to one or more CVEs (v3 if exists, else v2)
+     * @param {...string} cveIds    CVE ids to search against
+     * @return {object} CVSS scores keyed by CVE id
+     */
     mapCVSS(...cveIds) { 
         return cveIds.reduce((map,cveId) => {
             map[cveId] = this.cves[cveId]?.cvss3 || this.cves[cveId]?.cvss2 || null
@@ -196,7 +253,10 @@ class CVEAggregate {
         },{})
     }
 
-    //Parse a line from the CVE-CSV - looking for CVE ids
+    /**
+     * Parse a line from the CVE-CSV - looking for CVE ids
+     * @param {string} line     one record from the CVE.csv
+     */
     parseCSVLine(line) {
         if( !line.length ) return
         
@@ -208,7 +268,10 @@ class CVEAggregate {
         }
     }
 
-    //Parse the due date from CISA entry
+    /**
+     * Parse the due date from CISA entry
+     * @param {object} item     Entry from the CISA KEV
+     */
     parseCISA(item) {
         const cveId = item?.cveID
         if( !cveId?.length ) return
@@ -226,7 +289,10 @@ class CVEAggregate {
         this.cves[cveId].cisa = item?.dueDate
     }
     
-    //Parse the epss score from first.org response item
+    /**
+     * Parse the EPSS score from first.org response item
+     * @param {object} item     Entry from the EPSS response
+     */
     parseEPSS(item) {
         const cveId = item?.cve
         if( !cveId?.length ) return
@@ -244,7 +310,10 @@ class CVEAggregate {
         this.cves[cveId].epss = Number(item.epss)
     }
 
-    //Parse the cvss vectors from nist.gov response item
+    /**
+     * Parse the CVSS scores from first.org response item
+     * @param {object} item     Entry from the CVSS response
+     */
     parseCVSS(item) {
         const cveId = item?.cve?.id
         if( !cveId?.length ) return
@@ -268,7 +337,11 @@ class CVEAggregate {
         }
     }
 
-    //Stream the CVE-CSV from mitre.org and extract new entries
+    /**
+     * Stream the CVE-CSV from mitre.org and extract new entries
+     * @param {array} feedback  array of console lines for updating feedback
+     * @param {number} index    index of the feedback array for this function
+     */
     update_cves (feedback=[], index=0) {
         if( this.cvesUpdated?.length && diffInDays(this.cvesUpdated) < this.daysdiff ) 
             return Promise.resolve(feedback[index] = `Updating CVEs ... [skip]`)
@@ -308,7 +381,11 @@ class CVEAggregate {
         .finally(() => this.save())
     }
 
-    //Fetch the CISA-KEV from cisa.gov and extract new entries
+    /**
+     * Fetch the CISA-KEV from cisa.gov and extract new entries
+     * @param {array} feedback  array of console lines for updating feedback
+     * @param {number} index    index of the feedback array for this function
+     */
     update_cisa (feedback=[], index=0) {
         if( this.cisaUpdated?.length && diffInDays(this.cisaUpdated) < this.daysdiff ) 
             return Promise.resolve(feedback[index] = `Updating CISA ... [skip]`)
@@ -337,7 +414,11 @@ class CVEAggregate {
         .finally(() => this.save())
     }
     
-    //Fetch the EPSS scores from first.org and extract new entries
+    /**
+     * Fetch the EPSS scores from first.org and extract new entries
+     * @param {array} feedback  array of console lines for updating feedback
+     * @param {number} index    index of the feedback array for this function
+     */
     update_epss (feedback=[], index=0) {
         if( this.epssUpdated?.length && diffInDays(this.epssUpdated) < this.daysdiff ) 
             return Promise.resolve(feedback[index] = `Updating EPSS ... [skip]`)
@@ -399,7 +480,11 @@ class CVEAggregate {
         .finally(() => this.save())
     }
 
-    //Fetch the CVSS vectors from nist.gov and extract new entries
+    /**
+     * Fetch the CVSS vectors from nist.gov and extract new entries
+     * @param {array} feedback  array of console lines for updating feedback
+     * @param {number} index    index of the feedback array for this function
+     */
     update_cvss (feedback=[], index=0) {
         if( this.cvssUpdated?.length && diffInDays(this.cvssUpdated) < this.daysdiff ) 
             return Promise.resolve(feedback[index] = `Updating CVSS ... [skip]`)
@@ -463,7 +548,10 @@ class CVEAggregate {
     
     /* Generate aggregate source */
 
-    //Build with full CVE list
+    /**
+     * Build with full CVE list
+     * Includes the CVE csv where some CVEs will not have matching data
+     */ 
     async build() {
         const feedback = new Array(4).fill('...')
         const interval = setInterval(() => this.log(feedback), 1000)
@@ -478,7 +566,10 @@ class CVEAggregate {
         })
     }
 
-    //Build with only applicable CVEs
+    /**
+     * Build with only applicable CVEs
+     * Only generate a list of CVEs that have data
+     */
     async update() {
         const feedback = new Array(3).fill('...')
         const interval = setInterval(() => this.log(feedback), 1000)
@@ -495,16 +586,32 @@ class CVEAggregate {
 
     /* Helper tools and calculators */
 
-    //Calculate a CVSS scoring from a vector string 
-    calculateCVSS(vectorString) {
-        return this.#CVSS.calculate(vectorString)
+    /**
+     * Calculate a CVSS scoring from a vector string 
+     * @param {string} vectorOrMetrics  The CVSS (v2 or v3) vector string
+     * @param {object} vectorOrMetrics  The CVSS metrics object
+     * @return {object} calculation results
+     */
+    calculateCVSS(vectorOrMetrics) {
+        return this.#CVSS.calculate(vectorOrMetrics)
     }
 
-    //Describe a CVSS vector or metrics object
+    /**
+     * Describe a CVSS vector or metrics object
+     * @param {string} vectorOrMetrics  The CVSS (v2 or v3) vector string
+     * @param {object} vectorOrMetrics  The CVSS metrics object
+     * @return {object} 
+     */
     describeCVSS(vectorOrMetrics) {
         return this.#CVSS.describe(vectorOrMetrics)
     }
 
+    /**
+     * Search the aggregate with fields and conditions
+     * ex. search({ epss:{ gt:0.5 } })
+     * @param {object} options  condition objects keyed by data field
+     * @return {object} full entries that match the given criteria
+     */
     search(options={}) {
         const critical = {}
         for(const cveId in this.cves) {
@@ -515,7 +622,7 @@ class CVEAggregate {
             if( !matchEPSS ) continue
 
             //Second: Date conversions
-            const matchCISA = !options?.cisa || cisa && compare(cisa, options?.cisa, (v) => new Date(v).getTime())
+            const matchCISA = !options?.cisa || compare(cisa, options?.cisa, (v) => v ? new Date(v).getTime() : v)
             if( !matchCISA ) continue
 
             //Last: CVSS calculation
@@ -528,8 +635,34 @@ class CVEAggregate {
         }
         return critical
     }
+
+    /**
+     * Fetch entries from the aggregate for one or more CVEs
+     * @param {...string} cveIds    CVE ids to search against
+     * @return {object} full entries for the given CVEs
+     */
+    map(...cveIds) { 
+        return cveIds.reduce((map,cveId) => {
+            if( cveId in this.cves ) {
+                map[cveId] = { ...this.cves[cveId] }
+            }
+            return map
+        },{})
+    }
     
+    /**
+     * Fetch entries from the aggregate for one or more CVEs
+     * @param {...string} cveIds    CVE ids to search against
+     * @return {array} full entries for the given CVEs
+     */
+    list(...cveIds) { 
+        return cveIds.reduce((arr,cveId) => {
+            if( cveId in this.cves ) {
+                arr.push({ id:cveId, ...this.cves[cveId] })
+            }
+            return arr
+        },[])
+    }
 }
 
 module.exports = CVEAggregate
-

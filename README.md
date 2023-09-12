@@ -55,6 +55,59 @@ Helper functions are provided to help access and reference the aggregate
 ```js
 const listOfCves = ['CVE-2023-35390','CVE-2023-35391','CVE-2023-38180']
 
+/* Get matching cve entries as an object */
+const map = cves.map(...listOfCves)
+//> {
+//>   'CVE-2023-35390': {
+//>     cisa: null,
+//>     epss: 0.00564,
+//>     cvss2: null,
+//>     cvss3: 'CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H'
+//>   },
+//>   'CVE-2023-35391': {
+//>     cisa: null,
+//>     epss: 0.00114,
+//>     cvss2: null,
+//>     cvss3: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N'
+//>   },
+//>   'CVE-2023-38180': {
+//>     cisa: '2023-08-30',
+//>     epss: 0.00484,
+//>     cvss2: null,
+//>     cvss3: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H'
+//>   }
+//> }
+
+/* Get matching cve entries as an array */
+const map = cves.list(...listOfCves)
+//> [
+//>   {
+//>     id: 'CVE-2023-35390',
+//>     cisa: null,
+//>     epss: 0.00564,
+//>     cvss2: null,
+//>     cvss3: 'CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H'
+//>   },
+//>   {
+//>     id: 'CVE-2023-35391',
+//>     cisa: null,
+//>     epss: 0.00114,
+//>     cvss2: null,
+//>     cvss3: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N'
+//>   },
+//>   {
+//>     id: 'CVE-2023-38180',
+//>     cisa: '2023-08-30',
+//>     epss: 0.00484,
+//>     cvss2: null,
+//>     cvss3: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H'
+//>   }
+//> ]
+```
+
+Get a value reduced/scaled across one or more CVE Ids
+
+```js
 /* Check one or more CVE Ids if (any) in the CISA KEV */
 const inKEV = cves.getCISA(...listOfCves)   
 //> true
