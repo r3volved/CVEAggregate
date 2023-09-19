@@ -59,18 +59,21 @@ const listOfCves = ['CVE-2023-35390','CVE-2023-35391','CVE-2023-38180']
 const map = cves.map(...listOfCves)
 //> {
 //>   'CVE-2023-35390': {
+//>     days: 0,
 //>     cisa: null,
 //>     epss: 0.00564,
 //>     cvss2: null,
 //>     cvss3: 'CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H'
 //>   },
 //>   'CVE-2023-35391': {
+//>     days: 0,
 //>     cisa: null,
 //>     epss: 0.00114,
 //>     cvss2: null,
 //>     cvss3: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N'
 //>   },
 //>   'CVE-2023-38180': {
+//>     days: 21,
 //>     cisa: '2023-08-30',
 //>     epss: 0.00484,
 //>     cvss2: null,
@@ -83,6 +86,7 @@ const list = cves.list(...listOfCves)
 //> [
 //>   {
 //>     id: 'CVE-2023-35390',
+//>     days: 0,
 //>     cisa: null,
 //>     epss: 0.00564,
 //>     cvss2: null,
@@ -90,6 +94,7 @@ const list = cves.list(...listOfCves)
 //>   },
 //>   {
 //>     id: 'CVE-2023-35391',
+//>     days: 0,
 //>     cisa: null,
 //>     epss: 0.00114,
 //>     cvss2: null,
@@ -97,6 +102,7 @@ const list = cves.list(...listOfCves)
 //>   },
 //>   {
 //>     id: 'CVE-2023-38180',
+//>     days: 21,
 //>     cisa: '2023-08-30',
 //>     epss: 0.00484,
 //>     cvss2: null,
@@ -158,8 +164,10 @@ const critical = cves.search({
     cisa:{ gte:'2023-09-01' }
 })
 //> {
-//>   'CVE-2023-24489': { cisa: '2023-09-06', epss: 0.9673, cvss: 9.8 },
-//>   'CVE-2023-38035': { cisa: '2023-09-12', epss: 0.91817, cvss: 9.8 }
+//>   'CVE-2023-24489': { daysUntilDue: -14, cisa: '2023-09-06', epss: 0.97441, cvss: 9.8 },
+//>   'CVE-2023-38035': { daysUntilDue: -8, cisa: '2023-09-12', epss: 0.96013, cvss: 9.8 },
+//>   'CVE-2023-33246': { daysUntilDue: 7, cisa: '2023-09-27', epss: 0.97146, cvss: 9.8 },
+//>   'CVE-2021-3129': { daysUntilDue: 19, cisa: '2023-10-09', epss: 0.97515, cvss: 9.8 }
 //> }
 ```
 

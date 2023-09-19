@@ -640,8 +640,10 @@ class CVEAggregate {
             const matchCVSS = !options?.cvss || compare(score.environmentalMetricScore, options?.cvss, (v) => Number(v))
             if( !matchCVSS ) continue
 
+            const daysUntilDue = Math.round(diffInDays(Date.now(), cisa))
+
             //If here, we match, return the calculated cvss instead of any vectors
-            critical[cveId] = { cisa, epss, cvss:score.environmentalMetricScore }
+            critical[cveId] = { daysUntilDue, cisa, epss, cvss:score.environmentalMetricScore }
         }
         return critical
     }
