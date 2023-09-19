@@ -51,6 +51,7 @@ class CVEAggregate {
     #urlEPSS = "https://api.first.org/data/v1/epss"
     #urlCVSS = "https://services.nvd.nist.gov/rest/json/cves/2.0"
     #CVSS    = new CVSS()
+    #weight = { cisa:0.8, epss:0.8, cvss:0.5 }
 
     constructor(filepath, verbose = false){
         this.filepath    = filepath?.length ? filepath : path.join(__dirname, 'cves.json')
@@ -184,6 +185,8 @@ class CVEAggregate {
         return data
     }
 
+    /* ACCESSORS */
+
     /**
      * Search one or more CVEs to see if they're in the CISA KEV
      * @param {...string} cveIds    CVE ids to search against
@@ -197,36 +200,12 @@ class CVEAggregate {
     }
 
     /**
-     * Map the CISA due dates to one or more CVEs
-     * @param {...string} cveIds    CVE ids to search against
-     * @return {object} due dates keyed by CVE id
-     */
-    mapCISA(...cveIds) { 
-        return cveIds.reduce((map,cveId) => {
-            map[cveId] = this.cves[cveId]?.cisa || null
-            return map
-        },{})
-    }
-    
-    /**
      * Get the scaled EPSS score of one or more CVEs
      * @param {...string} cveIds    CVE ids to search against
      * @return {number} EPSS score
      */
     getEPSS(...cveIds) {
         return (1 - cveIds.map(cveId => this.cves[cveId]?.epss || 0).filter(v => v).reduce((p,v) => p * (1-v),1))
-    }
-
-    /**
-     * Map the EPSS score to one or more CVEs
-     * @param {...string} cveIds    CVE ids to search against
-     * @return {object} EPSS scores keyed by CVE id
-     */
-    mapEPSS(...cveIds) { 
-        return cveIds.reduce((map,cveId) => {
-            map[cveId] = this.cves[cveId]?.epss || 0
-            return map
-        },{})
     }
 
     /**
@@ -241,6 +220,32 @@ class CVEAggregate {
         },0)
     }
 
+    /* MAPPERS */
+
+    /**
+     * Map the CISA due dates to one or more CVEs
+     * @param {...string} cveIds    CVE ids to search against
+     * @return {object} due dates keyed by CVE id
+     */
+    mapCISA(...cveIds) { 
+        return cveIds.reduce((map,cveId) => {
+            map[cveId] = this.cves[cveId]?.cisa || null
+            return map
+        },{})
+    }
+    
+    /**
+     * Map the EPSS score to one or more CVEs
+     * @param {...string} cveIds    CVE ids to search against
+     * @return {object} EPSS scores keyed by CVE id
+     */
+    mapEPSS(...cveIds) { 
+        return cveIds.reduce((map,cveId) => {
+            map[cveId] = this.cves[cveId]?.epss || 0
+            return map
+        },{})
+    }
+
     /**
      * Map the CVSS score to one or more CVEs (v3 if exists, else v2)
      * @param {...string} cveIds    CVE ids to search against
@@ -253,6 +258,8 @@ class CVEAggregate {
         },{})
     }
 
+    /* PARSERS */
+
     /**
      * Parse a line from the CVE-CSV - looking for CVE ids
      * @param {string} line     one record from the CVE.csv
@@ -263,7 +270,7 @@ class CVEAggregate {
         const cveId = line?.match?.(/^(CVE-\d{4}-\d{4,})\s*,/)?.[1]
         if( !cveId?.length ) return
         if( !(cveId in this.cves) ) {
-            this.cves[cveId] = { cisa:null, epss:0, cvss2:null, cvss3:null }
+            this.cves[cveId] = { days:0, cisa:null, epss:0, cvss2:null, cvss3:null }
             this.newCVES.add(cveId)
         }
     }
@@ -276,17 +283,18 @@ class CVEAggregate {
         const cveId = item?.cveID
         if( !cveId?.length ) return
         if( !(cveId in this.cves) ) {
-            this.cves[cveId] = { cisa:null, epss:0, cvss2:null, cvss3:null }
+            this.cves[cveId] = { days:0, cisa:null, epss:0, cvss2:null, cvss3:null }
             this.newCVES.add(cveId)
         }
 
-        if( this.cves[cveId].cisa === item?.dueDate ) 
+        if( this.cves[cveId].cisa === item.dueDate ) 
             return //Already the same
 
         if( !this.cves[cveId].cisa ) {
             this.newCISA.add(cveId)
         }
-        this.cves[cveId].cisa = item?.dueDate
+        this.cves[cveId].cisa = item.dueDate
+        this.cves[cveId].days = diffInDays(item.dateAdded, item.dueDate)
     }
     
     /**
@@ -297,7 +305,7 @@ class CVEAggregate {
         const cveId = item?.cve
         if( !cveId?.length ) return
         if( !(cveId in this.cves) ) {
-            this.cves[cveId] = { cisa:null, epss:0, cvss2:null, cvss3:null }
+            this.cves[cveId] = { days:0, cisa:null, epss:0, cvss2:null, cvss3:null }
             this.newCVES.add(cveId)
         }
 
@@ -318,7 +326,7 @@ class CVEAggregate {
         const cveId = item?.cve?.id
         if( !cveId?.length ) return
         if( !(cveId in this.cves) ) {
-            this.cves[cveId] = { cisa:null, epss:0, cvss2:null, cvss3:null }
+            this.cves[cveId] = { days:0, cisa:null, epss:0, cvss2:null, cvss3:null }
             this.newCVES.add(cveId)
         }
 
@@ -336,6 +344,8 @@ class CVEAggregate {
             this.cves[cveId].cvss3 = v3vector
         }
     }
+
+    /* UPDATE ROUTINES */
 
     /**
      * Stream the CVE-CSV from mitre.org and extract new entries
@@ -630,8 +640,10 @@ class CVEAggregate {
             const matchCVSS = !options?.cvss || compare(score.environmentalMetricScore, options?.cvss, (v) => Number(v))
             if( !matchCVSS ) continue
 
+            const daysUntilDue = Math.round(diffInDays(Date.now(), cisa))
+
             //If here, we match, return the calculated cvss instead of any vectors
-            critical[cveId] = { cisa, epss, cvss:score.environmentalMetricScore }
+            critical[cveId] = { daysUntilDue, cisa, epss, cvss:score.environmentalMetricScore }
         }
         return critical
     }
@@ -663,6 +675,59 @@ class CVEAggregate {
             return arr
         },[])
     }
+
+    /**
+     * Get list of all CVE Ids
+     * @return {string[]} list of CVE ids
+     */
+    cveList() {
+        return Object.keys(this.cves)
+    }
+
+    /**
+     * Search one or more CVEs to check risk 
+     * @param {...string} cveIds    CVE ids to search against
+     * @return {object} risk
+     */
+    check(...cveIds) {
+        const peak = { cisa:0, epss:0, cvss:0 }
+        const list = { cisa:[], epss:[], cvss:[] }
+        for(const cveId of cveIds) {
+            const ref = this.cves[cveId]
+            if( !ref ) continue
+            if( ref.cisa ) {
+                const days = Math.round(diffInDays(Date.now(), ref.cisa))
+                if( days <= 0 ) list.cisa.push({date:ref.cisa, days, risk:100})
+                else list.cisa.push({date:ref.cisa, days, risk:days / ref.days * 100})
+            }
+            if( ref.epss ) list.epss.push({score:ref.epss})
+            if( ref.cvss3 || ref.cvss2 ) list.cvss.push({vector:ref.cvss3 || ref.cvss2})
+        }
+
+        peak.epss = (1 - list.epss.reduce((p,v) => p * (1-v.score),1))
+        peak.cvss = list.cvss.reduce((max,{vector}) => {
+            if( max === 10 ) return max
+            const score = this.calculateCVSS(vector).environmentalMetricScore
+            return Math.max(max, score)
+        },0)
+
+        peak.epss = { epss:peak.epss, risk:Math.round(peak.epss*100) }
+        peak.cvss = { cvss:peak.cvss, risk:Math.round(peak.cvss*10) }
+        peak.cisa = list.cisa.reduce((max,entry) => {
+            if( entry.risk > max.risk ) return entry
+            return max
+        },{date:null,days:0,risk:0})
+        
+        let epss = peak.epss.risk * this.#weight.epss
+        let cvss = peak.cvss.risk * this.#weight.cvss
+        let cisa = peak.cisa.risk * this.#weight.cisa
+
+        let num = epss + cvss + cisa
+        let den = this.#weight.epss + this.#weight.cvss + this.#weight.cisa
+
+        return { peak, risk:Math.round(num / (den || 1)) }
+    }
+    
 }
 
 module.exports = CVEAggregate

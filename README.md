@@ -59,18 +59,21 @@ const listOfCves = ['CVE-2023-35390','CVE-2023-35391','CVE-2023-38180']
 const map = cves.map(...listOfCves)
 //> {
 //>   'CVE-2023-35390': {
+//>     days: 0,
 //>     cisa: null,
 //>     epss: 0.00564,
 //>     cvss2: null,
 //>     cvss3: 'CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H'
 //>   },
 //>   'CVE-2023-35391': {
+//>     days: 0,
 //>     cisa: null,
 //>     epss: 0.00114,
 //>     cvss2: null,
 //>     cvss3: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N'
 //>   },
 //>   'CVE-2023-38180': {
+//>     days: 21,
 //>     cisa: '2023-08-30',
 //>     epss: 0.00484,
 //>     cvss2: null,
@@ -79,10 +82,11 @@ const map = cves.map(...listOfCves)
 //> }
 
 /* Get matching cve entries as an array */
-const map = cves.list(...listOfCves)
+const list = cves.list(...listOfCves)
 //> [
 //>   {
 //>     id: 'CVE-2023-35390',
+//>     days: 0,
 //>     cisa: null,
 //>     epss: 0.00564,
 //>     cvss2: null,
@@ -90,6 +94,7 @@ const map = cves.list(...listOfCves)
 //>   },
 //>   {
 //>     id: 'CVE-2023-35391',
+//>     days: 0,
 //>     cisa: null,
 //>     epss: 0.00114,
 //>     cvss2: null,
@@ -97,12 +102,16 @@ const map = cves.list(...listOfCves)
 //>   },
 //>   {
 //>     id: 'CVE-2023-38180',
+//>     days: 21,
 //>     cisa: '2023-08-30',
 //>     epss: 0.00484,
 //>     cvss2: null,
 //>     cvss3: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H'
 //>   }
 //> ]
+
+/* Get the whole list of CVE IDs in the cache */
+const allCVEs = cves.cveList()
 ```
 
 Get a value reduced/scaled across one or more CVE Ids
@@ -113,11 +122,11 @@ const inKEV = cves.getCISA(...listOfCves)
 //> true
 
 /* Get the scaled EPSS score for one or more CVE Ids */
-const epss = cves.getEPSS(...listOfCves)    
+const epssScore = cves.getEPSS(...listOfCves)    
 //> 0.011580786319263958
 
 /* Get the maximum CVSS score across one or more CVE Ids */
-const cvss = cves.getCVSS(...listOfCves)    
+const cvssScore = cves.getCVSS(...listOfCves)
 //> 7.8
 ```
 
@@ -155,8 +164,10 @@ const critical = cves.search({
     cisa:{ gte:'2023-09-01' }
 })
 //> {
-//>   'CVE-2023-24489': { cisa: '2023-09-06', epss: 0.9673, cvss: 9.8 },
-//>   'CVE-2023-38035': { cisa: '2023-09-12', epss: 0.91817, cvss: 9.8 }
+//>   'CVE-2023-24489': { daysUntilDue: -14, cisa: '2023-09-06', epss: 0.97441, cvss: 9.8 },
+//>   'CVE-2023-38035': { daysUntilDue: -8, cisa: '2023-09-12', epss: 0.96013, cvss: 9.8 },
+//>   'CVE-2023-33246': { daysUntilDue: 7, cisa: '2023-09-27', epss: 0.97146, cvss: 9.8 },
+//>   'CVE-2021-3129': { daysUntilDue: 19, cisa: '2023-10-09', epss: 0.97515, cvss: 9.8 }
 //> }
 ```
 
