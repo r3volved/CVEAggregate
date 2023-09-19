@@ -79,7 +79,7 @@ const map = cves.map(...listOfCves)
 //> }
 
 /* Get matching cve entries as an array */
-const map = cves.list(...listOfCves)
+const list = cves.list(...listOfCves)
 //> [
 //>   {
 //>     id: 'CVE-2023-35390',
@@ -103,6 +103,9 @@ const map = cves.list(...listOfCves)
 //>     cvss3: 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H'
 //>   }
 //> ]
+
+/* Get the whole list of CVE IDs in the cache */
+const allCVEs = cves.cveList()
 ```
 
 Get a value reduced/scaled across one or more CVE Ids
@@ -113,11 +116,11 @@ const inKEV = cves.getCISA(...listOfCves)
 //> true
 
 /* Get the scaled EPSS score for one or more CVE Ids */
-const epss = cves.getEPSS(...listOfCves)    
+const epssScore = cves.getEPSS(...listOfCves)    
 //> 0.011580786319263958
 
 /* Get the maximum CVSS score across one or more CVE Ids */
-const cvss = cves.getCVSS(...listOfCves)    
+const cvssScore = cves.getCVSS(...listOfCves)
 //> 7.8
 ```
 
