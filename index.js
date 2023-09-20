@@ -102,6 +102,7 @@ export class CVEAggregate {
     constructor(filepath, verbose = false){
         this.filepath    = filepath?.length ? filepath : null //join(__dirname, 'cves.json')
         this.verbose     = verbose
+        this.logger      = verbose ? new Logger() : { log:() => {} }
         this.cves        = {}
         this.lastUpdated = null
         this.cvesUpdated = null
@@ -111,7 +112,6 @@ export class CVEAggregate {
         this.lastCount   = null
         this.daysdiff    = 0.1    //Skip epss and cvss update if less than this many days since last update
         this.load()
-        this.logger      = verbose ? new Logger() : { log:() => {} }
     }
 
     /**
@@ -389,12 +389,12 @@ export class CVEAggregate {
      * @param {number} index    index of the feedback array for this function
      * @return {Promise}
      */
-    update_cves (feedback=[], index=0) {
+    async update_cves (feedback=[], index=0) {
         if( this.cvesUpdated?.length && diffInDays(this.cvesUpdated) < this.daysdiff ) 
-            return Promise.resolve(feedback[index] = `Updating CVEs ... [skip]`)
+            return feedback[index] = `Updating CVEs ... [skip]`
 
-        const https    = require('node:https')
-        const readline = require('node:readline')
+        const https = await import('node:https')
+        const readline = await import('node:readline')
         const cancelRequest = new AbortController()
         return new Promise((resolve, reject) => {
             https.get(this.#urlCVES, { signal: cancelRequest.signal }, (res) => {
@@ -434,9 +434,9 @@ export class CVEAggregate {
      * @param {number} index    index of the feedback array for this function
      * @return {Promise}
      */
-    update_cisa (feedback=[], index=0) {
+    async update_cisa (feedback=[], index=0) {
         if( this.cisaUpdated?.length && diffInDays(this.cisaUpdated) < this.daysdiff ) 
-            return Promise.resolve(feedback[index] = `Updating CISA ... [skip]`)
+            return feedback[index] = `Updating CISA ... [skip]`
 
         return new Promise(async (resolve, reject) => {
 
@@ -468,9 +468,9 @@ export class CVEAggregate {
      * @param {number} index    index of the feedback array for this function
      * @return {Promise}
      */
-    update_epss (feedback=[], index=0) {
+    async update_epss (feedback=[], index=0) {
         if( this.epssUpdated?.length && diffInDays(this.epssUpdated) < this.daysdiff ) 
-            return Promise.resolve(feedback[index] = `Updating EPSS ... [skip]`)
+            return feedback[index] = `Updating EPSS ... [skip]`
         
         return new Promise(async (resolve, reject) => {            
             const lastUpdated  = this.epssUpdated
@@ -535,9 +535,9 @@ export class CVEAggregate {
      * @param {number} index    index of the feedback array for this function
      * @return {Promise}
      */
-    update_cvss (feedback=[], index=0) {
+    async update_cvss (feedback=[], index=0) {
         if( this.cvssUpdated?.length && diffInDays(this.cvssUpdated) < this.daysdiff ) 
-            return Promise.resolve(feedback[index] = `Updating CVSS ... [skip]`)
+            return feedback[index] = `Updating CVSS ... [skip]`
 
         return new Promise(async (resolve, reject) => {
             const lastUpdated  = this.cvssUpdated
