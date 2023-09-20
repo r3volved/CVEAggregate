@@ -1,17 +1,18 @@
-const path = require('path')
+import { join, dirname } from 'path'
+import { fileURLToPath } from 'url'
 
-if( !process.argv[2]?.length ) {
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const fileJson = process.argv[2]
+if( !fileJson?.length ) {
     console.error('Error: No export file specified\n')
-    console.log(`Build a full CVE aggregate with:\n$ node ${path.join(__dirname, 'build.js')} /path/to/cves.json`)
+    console.log(`Build a full CVE aggregate with:\n$ node ${join(__dirname, 'build.js')} /path/to/cves.json`)
     process.exit(-1)
 }
 
-const modulepath = path.join(__dirname, 'index.js')
-const CVEAggregate = require(modulepath)
+const cveLibPath = join(__dirname, 'index.js')
+const { CVEAggregate } = await import(cveLibPath)
+const aggregate = new CVEAggregate(fileJson, true)
 
-const filepath = process.argv[2]
-const aggregate = new CVEAggregate(filepath, true)
-
-aggregate.build()
-    .then(() => aggregate.logger.log("-".repeat(30)))
-    .then(() => aggregate.report())
+await aggregate.build()
+await aggregate.logger.log("-".repeat(30))
+await aggregate.report()

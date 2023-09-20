@@ -1,8 +1,10 @@
-const { writeFileSync, readFileSync, existsSync } = require('fs')
+import { writeFileSync, readFileSync, existsSync } from 'fs'
+import { fileURLToPath } from 'url'
+import { join, dirname } from 'path'
 
-const path = require('path')
-
-const CVSS = require(path.join(__dirname, 'cvss.js'))
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const cvssLibPath = join(__dirname, 'cvss.js')
+const { CVSS } = await import(cvssLibPath)
 
 /**
  * Get the difference between two dates (in days)
@@ -45,7 +47,7 @@ const compareFunc = {
     neq:(v1, v2) => v1 !== v2,  //Same as ne
 }
 
-class Logger {
+export class Logger {
     constructor() {
         this.logging = false
     }
@@ -89,7 +91,7 @@ class Logger {
     }    
 }
 
-class CVEAggregate { 
+export class CVEAggregate { 
     #urlCVES = "https://cve.mitre.org/data/downloads/allitems.csv"
     #urlCISA = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
     #urlEPSS = "https://api.first.org/data/v1/epss"
@@ -98,7 +100,7 @@ class CVEAggregate {
     #weight = { cisa:0.8, epss:0.8, cvss:0.5 }
 
     constructor(filepath, verbose = false){
-        this.filepath    = filepath?.length ? filepath : null //path.join(__dirname, 'cves.json')
+        this.filepath    = filepath?.length ? filepath : null //join(__dirname, 'cves.json')
         this.verbose     = verbose
         this.cves        = {}
         this.lastUpdated = null
@@ -774,4 +776,3 @@ class CVEAggregate {
     
 }
 
-module.exports = CVEAggregate
