@@ -6,7 +6,7 @@ Build a CVE library with aggregated CISA, EPSS and CVSS data
 - **CVSS Values** : V2 and/or V3 vector strings (or null)
 
 ```js
-const { CVEAggregate } = require("/path/to/CVEAggregate/lib/index.js")
+const { CVEAggregate } = require("/path/to/CVEAggregate/lib/index.cjs")
 
 /* If verbose, will log stuff to console */
 const verbose = true
