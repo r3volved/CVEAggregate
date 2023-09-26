@@ -6,36 +6,18 @@ Build a CVE library with aggregated CISA, EPSS and CVSS data
 - **CVSS Values** : V2 and/or V3 vector strings (or null)
 
 ```js
-/** CommonJS 
- * When requiring, reference the .cjs files in the /lib folder
-*/
-const { CVEAggregate } = require("/path/to/CVEAggregate/lib/index.cjs")
-
-/** ESM 
- * When importing, reference the .js files in the /src folder
-*/
 import { CVEAggregate } from "/path/to/CVEAggregate/src/index.js"
 
 // or
 
 const { CVEAggregate } = await import("/path/to/CVEAggregate/src/index.js")
-```
 
-```js
 /* If verbose, will log stuff to console */
 const verbose = true
 const cves = new CVEAggregate('/path/to/cves.json', verbose)
 ```
 
 ## Building the aggregate
-
-```sh
-# Quick-build/update full list (with all CVEs)
-$ node /path/to/CVEAggregate/build.js /path/to/cves.json
-
-# Quick-build/update short list (ignoring inactive CVEs)
-$ node /path/to/CVEAggregate/update.js /path/to/cves.json
-```
 
 The path provided to the constructor will load file if exists and will save updates to same location.
 
@@ -46,13 +28,11 @@ The update process will collect only the CVE Ids that have associated aggregate 
 Note: *Once the initial aggregate has been created, subsequent build or update calls will only collect new items since last save.*
 
 ```js
-const saveAtEachStage = true
+/* Build full list */
+await cves.build()
 
-/* Build/update full list */
-await cves.build(saveAtEachStage)
-
-/* Build/update short list */
-await cves.update(saveAtEachStage)
+/* Build short list */
+await cves.update()
 
 /* List new items since last load, plus aggregate totals and details */
 cves.report() 
@@ -60,17 +40,11 @@ cves.report()
 /* Return the full json aggregate */
 const data = cves.dump()     
 
-/* Save the current cache (to the filepath provided) */
+/* Force save (to the filepath provided) */
 cves.save()
 
-/* Load the cache from file (from the filepath provided) */
+/* Force load (from the filepath provided) */
 cves.load()
-
-/* Force rebuild full list */
-await cves.forceBuild(saveAtEachStage)
-
-/* Force rebuild short list */
-await cves.forceUpdate(saveAtEachStage)
 ```
 
 ## Accessing the aggregate

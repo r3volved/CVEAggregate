@@ -2,9 +2,19 @@
   "name": "cveaggregate",
   "version": "1.0.0",
   "description": "Build a CVE library with aggregated CISA, EPSS and CVSS data",
-  "main": "index.js",
+  "main": "lib/index.cjs",
+  "module": "src/index.js",
+  "exports": {
+    ".": {
+      "import": "./src/index.js",
+      "require": "./lib/index.cjs"
+    }
+  },
+  "type":"module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: try test_common or test_esm\" && exit 1",
+    "test_esm": "node ./test/test_esm.mjs",
+    "test_common": "node ./test/test_common.cjs"
   },
   "author": "r3volved",
   "license": "ISC"

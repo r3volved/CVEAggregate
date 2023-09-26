@@ -1,4 +1,4 @@
-class CVSS2 {
+export class CVSS2 {
     #vectorRegex = /((AV:[NAL]|AC:[LHM]|Au:[MSN]|[CIA]:[NPC]|E:[ND|U|POC|F|H]{1,3}|RL:[ND|OF|TF|W|U]{1,2}|RC:[ND|UC|UR|C]{1,2}|CDP:[ND|N|L|LM|MH|H]{1,2}|TD:[ND|N|L|M|H]{1,2}|CR:[ND|L|M|H]{1,2}|IR:[ND|L|M|H]{1,2}|AR:[ND|L|M|H]{1,2})\/)*(AV:[NAL]|AC:[LHM]|Au:[MSN]|[CIA]:[NPC]|E:[ND|U|POC|F|H]{1,3}|RL:[ND|OF|TF|W|U]{1,2}|RC:[ND|UC|UR|C]{1,2}|CDP:[ND|N|L|LM|MH|H]{1,2}|TD:[ND|N|L|M|H]{1,2}|CR:[ND|L|M|H]{1,2}|IR:[ND|L|M|H]{1,2}|AR:[ND|L|M|H]{1,2})/
     #vectorPattern = /[A-Za-z]{1,3}:[A-Za-z]{1,3}/ig
 
@@ -182,7 +182,7 @@ class CVSS2 {
     }
 }
 
-class CVSS3 {
+export class CVSS3 {
     #vectorRegex = /CVSS:3(\.\d){0,1}\/((AV:[NALP]|AC:[LH]|PR:[UNLH]|UI:[NR]|S:[UC]|[CIA]:[NLH]|E:[XUPFH]|RL:[XOTWU]|RC:[XURC]|[CIA]R:[XLMH]|MAV:[XNALP]|MAC:[XLH]|MPR:[XUNLH]|MUI:[XNR]|MS:[XUC]|M[CIA]:[XNLH])\/)*(AV:[NALP]|AC:[LH]|PR:[UNLH]|UI:[NR]|S:[UC]|[CIA]:[NLH]|E:[XUPFH]|RL:[XOTWU]|RC:[XURC]|[CIA]R:[XLMH]|MAV:[XNALP]|MAC:[XLH]|MPR:[XUNLH]|MUI:[XNR]|MS:[XUC]|M[CIA]:[XNLH])/
 
     constructor(options={}) {
@@ -435,7 +435,7 @@ class CVSS3 {
     }
 }
 
-class CVSS {
+export class CVSS {
     constructor() {
         this.v2 = new CVSS2()
         this.v3 = new CVSS3()
@@ -475,5 +475,3 @@ class CVSS {
             : this.v3.describeMetrics(metricValues)
     }
 }
-
-module.exports = CVSS

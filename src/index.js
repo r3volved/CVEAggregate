@@ -1,8 +1,10 @@
-const { writeFileSync, readFileSync, existsSync } = require('fs')
+import { writeFileSync, readFileSync, existsSync } from 'fs'
+import { fileURLToPath } from 'url'
+import { join, dirname } from 'path'
 
-const path = require('path')
-
-const CVSS = require(path.join(__dirname, 'cvss.js'))
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const cvssLibPath = join(__dirname, 'cvss.js')
+const { CVSS } = await import(cvssLibPath)
 
 /**
  * Get the difference between two dates (in days)
@@ -45,7 +47,51 @@ const compareFunc = {
     neq:(v1, v2) => v1 !== v2,  //Same as ne
 }
 
-class CVEAggregate { 
+export class Logger {
+    constructor() {
+        this.logging = false
+    }
+
+    /**
+     * Log to console
+     * @param {Error}   lines an error object to throw in console
+     */
+    error(err) {
+        this.logging = false
+        console.error(err)
+    }
+
+    /**
+     * Log multiple lines console
+     * @param {array}   lines a list of strings to replace the last n-lines in console if the last log was array
+     */
+    multi(lines) {
+        if( this.logging ) {
+            process.stdout.moveCursor(0, -1*(lines.length))
+            process.stdout.clearLine(0)
+            process.stdout.cursorTo(0)
+        }
+        process.stdout.write(lines.join('\n')+'\n')
+        this.logging = true
+    }
+
+    /**
+     * Log to console
+     * @param {array}   lines a list of strings to replace the last n-lines in console if the last log was array
+     * @param {Error}   lines an error object to throw in console
+     * @param {any}     lines any other value/type to log in console
+     */
+    log(lines, ...other) {
+        if( lines === undefined ) return
+        if( lines instanceof Error ) return this.error(lines)
+        if( Array.isArray(lines) ) return this.multi(lines)
+
+        this.logging = false
+        console.log(lines, ...other)
+    }    
+}
+
+export class CVEAggregate { 
     #urlCVES = "https://cve.mitre.org/data/downloads/allitems.csv"
     #urlCISA = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
     #urlEPSS = "https://api.first.org/data/v1/epss"
@@ -54,8 +100,9 @@ class CVEAggregate {
     #weight = { cisa:0.8, epss:0.8, cvss:0.5 }
 
     constructor(filepath, verbose = false){
-        this.filepath    = filepath?.length ? filepath : path.join(__dirname, 'cves.json')
+        this.filepath    = filepath?.length ? filepath : null //join(__dirname, 'cves.json')
         this.verbose     = verbose
+        this.logger      = verbose ? new Logger() : { log:() => {} }
         this.cves        = {}
         this.lastUpdated = null
         this.cvesUpdated = null
@@ -73,24 +120,8 @@ class CVEAggregate {
      * @param {Error}   lines an error object to throw in console
      * @param {any}     lines any other value/type to log in console
      */
-    log(lines) {
-        if( !this.verbose ) return
-        if( lines === undefined ) return
-        if( Array.isArray(lines) ) {
-            if( this.logging ) {
-                process.stdout.moveCursor(0, -1*(lines.length))
-                process.stdout.clearLine(0)
-                process.stdout.cursorTo(0)
-            }
-            process.stdout.write(lines.join('\n')+'\n')
-            this.logging = true
-        } else if( lines instanceof Error ) {
-            this.logging = false
-            console.error(lines)
-        } else {
-            this.logging = false
-            console.log(lines)        
-        }
+    log(...lines) {
+        this.logger.log(...lines)
     }
 
     /**
@@ -112,19 +143,20 @@ class CVEAggregate {
     /**
      * Save current cves to filepath
      */
-    save() {
+    save(filepath = this.filepath) {
         this.lastUpdated = (new Date()).toISOString()
-        writeFileSync(this.filepath, JSON.stringify(this.dump()), 'utf8')
+        if( filepath?.length ) 
+            writeFileSync(filepath, JSON.stringify(this.dump()), 'utf8')
     }
 
     /**
      * Load cves from a filepath
      */
-    load() {
+    load(filepath = this.filepath) {
         try { 
-            if( !existsSync(this.filepath) ) throw new Error('No cve list')
+            if( !existsSync(filepath) ) throw new Error('No cve list')
             //Load the content of last save
-            const json = JSON.parse(readFileSync(this.filepath, 'utf8')) 
+            const json = JSON.parse(readFileSync(filepath, 'utf8')) 
             this.cves        = json.cves        || this.cves
             this.lastUpdated = json.lastUpdated || this.lastUpdated
             this.lastCount   = json.lastCount   || this.lastCount
@@ -135,13 +167,13 @@ class CVEAggregate {
         } catch(e) { 
             //No file or error loading, create fresh
             this.cves        = this.cves        || {}   
-            this.lastUpdated = this.lastUpdated || null 
             this.lastCount   = this.lastCount   || null 
-            this.cvesUpdated = this.cvesUpdated || null 
-            this.cisaUpdated = this.cisaUpdated || null 
-            this.epssUpdated = this.epssUpdated || null 
-            this.cvssUpdated = this.cvssUpdated || null 
+            this.resetTimestamps()
         }
+        this.resetCounters()
+    }
+
+    resetCounters() {
         //reset the new item counters
         this.newCVES  = new Set()
         this.newCISA  = new Set()
@@ -150,19 +182,27 @@ class CVEAggregate {
         this.newCVSS3 = new Set()
     }
 
+    resetTimestamps() {
+        this.lastUpdated = null
+        this.cvesUpdated = null
+        this.cisaUpdated = null
+        this.epssUpdated = null
+        this.cvssUpdated = null
+    }
+
     /**
      * Report update details since last load
      * @return {object} collection of data details
      */
     report(reportZero) {
-        if( reportZero || this.newCVES.size )  this.log(`Found ${this.newCVES.size.toLocaleString()} new CVEs`)
-        if( reportZero || this.newCISA.size )  this.log(`Found ${this.newCISA.size.toLocaleString()} new CISA entries`)
-        if( reportZero || this.newEPSS.size )  this.log(`Found ${this.newEPSS.size.toLocaleString()} new EPSS scores`)
-        if( reportZero || this.newCVSS2.size ) this.log(`Found ${this.newCVSS2.size.toLocaleString()} new CVSSv2 vectors`)
-        if( reportZero || this.newCVSS3.size ) this.log(`Found ${this.newCVSS3.size.toLocaleString()} new CVSSv3 vectors`)
+        if( reportZero || this.newCVES.size )  this.logger.log(`Found ${this.newCVES.size.toLocaleString()} new CVEs`)
+        if( reportZero || this.newCISA.size )  this.logger.log(`Found ${this.newCISA.size.toLocaleString()} new CISA entries`)
+        if( reportZero || this.newEPSS.size )  this.logger.log(`Found ${this.newEPSS.size.toLocaleString()} new EPSS scores`)
+        if( reportZero || this.newCVSS2.size ) this.logger.log(`Found ${this.newCVSS2.size.toLocaleString()} new CVSSv2 vectors`)
+        if( reportZero || this.newCVSS3.size ) this.logger.log(`Found ${this.newCVSS3.size.toLocaleString()} new CVSSv3 vectors`)
         //If anything found, add a divider line
         if( reportZero || this.newCVES.size || this.newCISA.size || this.newEPSS.size || this.newCVSS2.size || this.newCVSS3.size )
-            this.log(`-`.repeat(30))
+            this.logger.log(`-`.repeat(30))
 
         //Collect and return details in one object
         const data = this.dump()
@@ -177,10 +217,10 @@ class CVEAggregate {
         data.totalEPSS = Object.values(this.cves).filter(i => i.epss).length
         data.totalCVSS = Object.values(this.cves).filter(i => i.cvss2 || i.cvss3).length
 
-        this.log(`Total CVEs:         ${data.totalCVES.toLocaleString()}`)
-        this.log(`Total CISA entries: ${data.totalCISA.toLocaleString()}`)
-        this.log(`Total EPSS scores:  ${data.totalEPSS.toLocaleString()}`)
-        this.log(`Total CVSS vectors: ${data.totalCVSS.toLocaleString()}`)
+        this.logger.log(`Total CVEs:         ${data.totalCVES.toLocaleString()}`)
+        this.logger.log(`Total CISA entries: ${data.totalCISA.toLocaleString()}`)
+        this.logger.log(`Total EPSS scores:  ${data.totalEPSS.toLocaleString()}`)
+        this.logger.log(`Total CVSS vectors: ${data.totalCVSS.toLocaleString()}`)
         
         return data
     }
@@ -351,19 +391,20 @@ class CVEAggregate {
      * Stream the CVE-CSV from mitre.org and extract new entries
      * @param {array} feedback  array of console lines for updating feedback
      * @param {number} index    index of the feedback array for this function
+     * @return {Promise}
      */
-    update_cves (feedback=[], index=0) {
+    async update_cves (feedback=[], index=0, saveAtEachStage) {
         if( this.cvesUpdated?.length && diffInDays(this.cvesUpdated) < this.daysdiff ) 
-            return Promise.resolve(feedback[index] = `Updating CVEs ... [skip]`)
+            return feedback[index] = `Updating CVEs ... [skip]`
 
-        const https    = require('node:https')
-        const readline = require('node:readline')
+        const https = await import('node:https')
+        const readline = await import('node:readline')
         const cancelRequest = new AbortController()
+        let fileDate = new Date().toISOString()
         return new Promise((resolve, reject) => {
             https.get(this.#urlCVES, { signal: cancelRequest.signal }, (res) => {
-                const lastModified = res.headers['last-modified']
-                const lastUpdated  = this.cvesUpdated
-                if( lastModified?.length && new Date(lastModified) <= new Date(lastUpdated) ) {
+                fileDate = new Date(res.headers['last-modified']).toISOString()
+                if( fileDate === this.cvesUpdated ) {
                     feedback[index] = `Updating CVEs ... [skip]`
                     cancelRequest.abort()
                     return reject()
@@ -385,54 +426,58 @@ class CVEAggregate {
         })
         .then(() => {
             feedback[index] = `Updating CVEs ... 100.0%`
-            this.cvesUpdated = (new Date()).toISOString()
+            this.cvesUpdated = fileDate
         })
-        .catch(e => this.log(e))
-        .finally(() => this.save())
+        .catch(e => this.logger.log(e))
+        .finally(() => saveAtEachStage ? this.save() : null)
     }
 
     /**
      * Fetch the CISA-KEV from cisa.gov and extract new entries
      * @param {array} feedback  array of console lines for updating feedback
      * @param {number} index    index of the feedback array for this function
+     * @return {Promise}
      */
-    update_cisa (feedback=[], index=0) {
+    async update_cisa (feedback=[], index=0, saveAtEachStage) {
         if( this.cisaUpdated?.length && diffInDays(this.cisaUpdated) < this.daysdiff ) 
-            return Promise.resolve(feedback[index] = `Updating CISA ... [skip]`)
+            return feedback[index] = `Updating CISA ... [skip]`
 
+        let fileDate = new Date().toISOString()
         return new Promise(async (resolve, reject) => {
 
-            feedback[index] = `Updating CISA ... `
-            const kev = await fetch(this.#urlCISA)
-                .then(res => res.json())
-                .catch(e => this.log(e))
-            
-            const { count = 0, vulnerabilities = [] } = kev || {}
-            kev?.vulnerabilities?.forEach((item,i) => {
-                let pct = (i / (count || 1) * 100).toFixed(1)
-                feedback[index] = `Updating CISA ... ${pct}%`
-                this.parseCISA(item)
-            })
-            resolve()        
+        feedback[index] = `Updating CISA ... `
+        const kev = await fetch(this.#urlCISA)
+            .then(res => res.json())
+            .catch(e => this.logger.log(e))
+        
+        const { count = 0, vulnerabilities = [] } = kev || {}
+        kev?.vulnerabilities?.forEach((item,i) => {
+            let pct = (i / (count || 1) * 100).toFixed(1)
+            feedback[index] = `Updating CISA ... ${pct}%`
+            this.parseCISA(item)
+        })
+        resolve()        
 
         })
         .then(() => {
             feedback[index] = `Updating CISA ... 100.0%`
-            this.cisaUpdated = (new Date()).toISOString()
+            this.cisaUpdated = fileDate
         })
-        .catch(e => this.log(e))
-        .finally(() => this.save())
+        .catch(e => this.logger.log(e))
+        .finally(() => saveAtEachStage ? this.save() : null)
     }
     
     /**
      * Fetch the EPSS scores from first.org and extract new entries
      * @param {array} feedback  array of console lines for updating feedback
      * @param {number} index    index of the feedback array for this function
+     * @return {Promise}
      */
-    update_epss (feedback=[], index=0) {
+    async update_epss (feedback=[], index=0, saveAtEachStage) {
         if( this.epssUpdated?.length && diffInDays(this.epssUpdated) < this.daysdiff ) 
-            return Promise.resolve(feedback[index] = `Updating EPSS ... [skip]`)
+            return feedback[index] = `Updating EPSS ... [skip]`
         
+        let fileDate = new Date().toISOString()
         return new Promise(async (resolve, reject) => {            
             const lastUpdated  = this.epssUpdated
             const daysLimit = (() => {
@@ -441,13 +486,14 @@ class CVEAggregate {
                 const now  = new Date()
                 const Difference_In_Time = now.getTime() - last.getTime()
                 const Difference_In_Days = Difference_In_Time / (1000 * 3600 * 24)
-                return `&days=${Math.ceil(Difference_In_Days)}`
+                const Extra_day = Math.ceil(Difference_In_Days+1) || 1 //extra day
+                return `&days=${Extra_day}`
             })()
 
             feedback[index] = `Updating EPSS ... `
             const firstBatch = await fetch(`${this.#urlEPSS}?envelope=true${daysLimit}`)
                 .then(res => res.json())
-                .catch(e => this.log(e))
+                .catch(e => this.logger.log(e))
     
             const { total = 1, data = [] } = firstBatch || {}
                 
@@ -461,7 +507,7 @@ class CVEAggregate {
             while(total > offset) {
                 const loopBatch = await fetch(`${this.#urlEPSS}?envelope=true&offset=${offset}${daysLimit}`)
                     .then(res => res.status < 400 ? res.json() : null)
-                    .catch(e => this.log(e))
+                    .catch(e => this.logger.log(e))
     
                 if( !loopBatch?.data ) {
                     //Failed more than 5 times
@@ -484,26 +530,30 @@ class CVEAggregate {
         })
         .then(() => {
             feedback[index] = `Updating EPSS ... 100.0%`
-            this.epssUpdated = (new Date()).toISOString()
+            this.epssUpdated = fileDate
         })
-        .catch(e => this.log(e))
-        .finally(() => this.save())
+        .catch(e => this.logger.log(e))
+        .finally(() => saveAtEachStage ? this.save() : null)
     }
 
     /**
      * Fetch the CVSS vectors from nist.gov and extract new entries
      * @param {array} feedback  array of console lines for updating feedback
      * @param {number} index    index of the feedback array for this function
+     * @return {Promise}
      */
-    update_cvss (feedback=[], index=0) {
+    async update_cvss (feedback=[], index=0, saveAtEachStage) {
         if( this.cvssUpdated?.length && diffInDays(this.cvssUpdated) < this.daysdiff ) 
-            return Promise.resolve(feedback[index] = `Updating CVSS ... [skip]`)
+            return feedback[index] = `Updating CVSS ... [skip]`
 
+        let fileDate = new Date().toISOString()
         return new Promise(async (resolve, reject) => {
             const lastUpdated  = this.cvssUpdated
             const daysLimit = (() => {
                 if( !lastUpdated ) return ''
-                const lastModStartDate = lastUpdated.split('.')[0]+"Z"
+                const lastDate = new Date(lastUpdated)
+                lastDate.setDate(lastDate.getDate()-1) //extra day
+                const lastModStartDate = lastDate.toISOString().split('.')[0]+"Z"
                 const lastModEndDate   = new Date().toISOString().split('.')[0]+"Z"
                 return `&lastModStartDate=${lastModStartDate}&lastModEndDate=${lastModEndDate}`
             })()
@@ -511,7 +561,7 @@ class CVEAggregate {
             feedback[index] = `Updating CVSS ... `
             const firstBatch = await fetch(`${this.#urlCVSS}?startIndex=0&${daysLimit}`)   
                 .then(res => res.json())
-                .catch(e => this.log(e))
+                .catch(e => this.logger.log(e))
 
             const { resultsPerPage = 0, totalResults = 0, vulnerabilities = [] } = firstBatch || {}
                 
@@ -527,7 +577,7 @@ class CVEAggregate {
     
                 const loopBatch = await fetch(`${this.#urlCVSS}?startIndex=${offset}${daysLimit}`)
                     .then(res => res.status < 400 ? res.json() : null)
-                    .catch(e => this.log(e))
+                    .catch(e => this.logger.log(e))
     
                 if( !loopBatch?.vulnerabilities ) {
                     //Failed more than 5 times
@@ -550,10 +600,10 @@ class CVEAggregate {
         })
         .then(() => {
             feedback[index] = `Updating CVSS ... 100.0%`
-            this.cvssUpdated = (new Date()).toISOString()
+            this.cvssUpdated = fileDate
         })
-        .catch(e => this.log(e))
-        .finally(() => this.save())
+        .catch(e => this.logger.log(e))
+        .finally(() => saveAtEachStage ? this.save() : null)
     }
     
     /* Generate aggregate source */
@@ -561,36 +611,50 @@ class CVEAggregate {
     /**
      * Build with full CVE list
      * Includes the CVE csv where some CVEs will not have matching data
+     * @return {Promise.<object>}
      */ 
-    async build() {
+    async build(saveAtEachStage) {
         const feedback = new Array(4).fill('...')
-        const interval = setInterval(() => this.log(feedback), 1000)
+        const interval = setInterval(() => this.logger.log(feedback), 1000)
         return Promise.all([
-            this.update_cves(feedback, 0),
-            this.update_cisa(feedback, 1),
-            this.update_epss(feedback, 2),
-            this.update_cvss(feedback, 3),
-        ]).finally(() => {
+            this.update_cves(feedback, 0, saveAtEachStage),
+            this.update_cisa(feedback, 1, saveAtEachStage),
+            this.update_epss(feedback, 2, saveAtEachStage),
+            this.update_cvss(feedback, 3, saveAtEachStage),
+        ])
+        .then(() => this.cves)
+        .finally(() => {
             clearInterval(interval)
-            this.log(feedback)            
+            this.logger.log(feedback)            
         })
+    }
+    async forceBuild(saveAtEachStage) {
+        this.resetTimestamps()
+        return this.build(saveAtEachStage)
     }
 
     /**
      * Build with only applicable CVEs
      * Only generate a list of CVEs that have data
+     * @return {Promise.<object>}
      */
-    async update() {
+    async update(saveAtEachStage) {
         const feedback = new Array(3).fill('...')
-        const interval = setInterval(() => this.log(feedback), 1000)
+        const interval = setInterval(() => this.logger.log(feedback), 1000)
         return Promise.all([
-            this.update_cisa(feedback, 0),
-            this.update_epss(feedback, 1),
-            this.update_cvss(feedback, 2),
-        ]).finally(() => {
+            this.update_cisa(feedback, 0, saveAtEachStage),
+            this.update_epss(feedback, 1, saveAtEachStage),
+            this.update_cvss(feedback, 2, saveAtEachStage),
+        ])
+        .then(() => this.cves)
+        .finally(() => {
             clearInterval(interval)
-            this.log(feedback)
+            this.logger.log(feedback)
         })
+    }
+    async forceUpdate(saveAtEachStage) {
+        this.resetTimestamps()
+        return this.update(saveAtEachStage)
     }
 
 
@@ -730,4 +794,3 @@ class CVEAggregate {
     
 }
 
-module.exports = CVEAggregate
