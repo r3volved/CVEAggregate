@@ -9,7 +9,7 @@ Build a CVE library with aggregated CISA, EPSS and CVSS data
 /** CommonJS 
  * When requiring, reference the .cjs files in the /lib folder
 */
-const { CVEAggregate } = require("/path/to/CVEAggregate/lib/index.js")
+const { CVEAggregate } = require("/path/to/CVEAggregate/lib/index.cjs")
 
 /** ESM 
  * When importing, reference the .js files in the /src folder
