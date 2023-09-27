@@ -42,7 +42,7 @@ for(const file of files) {
             
             line = line.replace('await import','require')
             line = line.replace(/(\.js)\b/,'.cjs')
-            line = line.replace('/src/','/lib/')
+            line = line.replace('/src','/lib')
             
             if( line.startsWith('export') ) {
                 line = line.slice(7)
@@ -60,7 +60,7 @@ for(const file of files) {
         })
 
         rl.on('close', () => {
-            if( type === 'js' ) {
+            if( type === 'js' && exports.length ) {
                 wl.write(`module.exports = {\n\t${exports.join(',\n\t')}\n}\n\n`)
             }
             wl.end()
