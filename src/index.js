@@ -3,93 +3,9 @@ import { fileURLToPath } from 'url'
 import { join, dirname } from 'path'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const cvssLibPath = join(__dirname, 'cvss.js')
-const { CVSS } = await import(cvssLibPath)
-
-/**
- * Get the difference between two dates (in days)
- * @param  {Date}   date1    
- * @param  {Date}   date2   Optional second date to use instead of current date
- * @return {number} Difference in days (floating point)
- */
-const diffInDays = (date1, date2 = Date.now()) => {
-    const last = new Date(date1)
-    const now  = new Date(date2)
-    const Difference_In_Time = now.getTime() - last.getTime()
-    const Difference_In_Days = Difference_In_Time / (1000 * 3600 * 24)
-    return Difference_In_Days
-}
-
-/**
- * Compare a value against a condition (optional format func)
- * @param  {*}      val     The value from the aggregate
- * @param  {object} option  The condition to compare with
- * @param  {func}   format  Optional formatting function for normalizing both sides of the condition
- * @return {bool}   Whether the value matches the condition
- */
-const compare = (val, option, format) => {
-    const key = Object.keys(option||{})[0]
-    return !key ? false : typeof format === 'function'
-        ? compareFunc[key]( val === null ? val : format(val), format(option[key]) )
-        : compareFunc[key]( val, option[key] )
-}
-
-/** 
- * Comparison functions mapped by key (gt,gte,lt,lte,eq,ne,neq)
- */
-const compareFunc = {
-    gt: (v1, v2) => v1 > v2,    //Greater than
-    gte:(v1, v2) => v1 >= v2,   //Greater than, or equal
-    lt: (v1, v2) => v1 < v2,    //Less than
-    lte:(v1, v2) => v1 <= v2,   //Less than, or equal
-    eq: (v1, v2) => v1 === v2,  //Is equal
-    ne: (v1, v2) => v1 !== v2,  //Not equal
-    neq:(v1, v2) => v1 !== v2,  //Same as ne
-}
-
-export class Logger {
-    constructor() {
-        this.logging = false
-    }
-
-    /**
-     * Log to console
-     * @param {Error}   lines an error object to throw in console
-     */
-    error(err) {
-        this.logging = false
-        console.error(err)
-    }
-
-    /**
-     * Log multiple lines console
-     * @param {array}   lines a list of strings to replace the last n-lines in console if the last log was array
-     */
-    multi(lines) {
-        if( this.logging ) {
-            process.stdout.moveCursor(0, -1*(lines.length))
-            process.stdout.clearLine(0)
-            process.stdout.cursorTo(0)
-        }
-        process.stdout.write(lines.join('\n')+'\n')
-        this.logging = true
-    }
-
-    /**
-     * Log to console
-     * @param {array}   lines a list of strings to replace the last n-lines in console if the last log was array
-     * @param {Error}   lines an error object to throw in console
-     * @param {any}     lines any other value/type to log in console
-     */
-    log(lines, ...other) {
-        if( lines === undefined ) return
-        if( lines instanceof Error ) return this.error(lines)
-        if( Array.isArray(lines) ) return this.multi(lines)
-
-        this.logging = false
-        console.log(lines, ...other)
-    }    
-}
+const { CVSS } = await import(join(__dirname, 'cvss.js'))
+const { Logger } = await import(join(__dirname, 'logger.js'))
+const { diffInDays, compare } = await import(join(__dirname, 'helpers.js'))
 
 export class CVEAggregate { 
     #urlCVES = "https://cve.mitre.org/data/downloads/allitems.csv"

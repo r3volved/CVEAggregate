@@ -8,10 +8,6 @@ Build a CVE library with aggregated CISA, EPSS and CVSS data
 ```js
 import { CVEAggregate } from "/path/to/CVEAggregate/src/index.js"
 
-// or
-
-const { CVEAggregate } = await import("/path/to/CVEAggregate/src/index.js")
-
 /* If verbose, will log stuff to console */
 const verbose = true
 const cves = new CVEAggregate('/path/to/cves.json', verbose)
