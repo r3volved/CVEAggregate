@@ -6,7 +6,7 @@ Build a CVE library with aggregated CISA, EPSS and CVSS data
 - **CVSS Values** : V2 and/or V3 vector strings (or null)
 
 ```js
-const { CVEAggregate } = require("/path/to/CVEAggregate/lib/index.cjs")
+const { CVEAggregate } = require('/path/to/CVEAggregate/lib/index.cjs')
 
 /* If verbose, will log stuff to console */
 const verbose = true
@@ -223,12 +223,14 @@ Example of the aggregated cves.json
     "lastCount": 216857,
     "cves": {
          "CVE-2018-4939": {
+            "days": 181,
             "cisa": "2022-05-03",
             "epss": 0.97236,
             "cvss2": "AV:N/AC:L/Au:N/C:C/I:C/A:C",
             "cvss3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
         },
         "CVE-2018-4878": {
+            "days": 181,
             "cisa": "2022-05-03",
             "epss": 0.9742,
             "cvss2": "AV:N/AC:L/Au:N/C:P/I:P/A:P",

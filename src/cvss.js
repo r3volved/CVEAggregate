@@ -475,3 +475,4 @@ export class CVSS {
             : this.v3.describeMetrics(metricValues)
     }
 }
+

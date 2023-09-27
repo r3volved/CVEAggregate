@@ -1,10 +1,12 @@
-const path = require('path')
+const { join, dirname } = require('path')
+const { fileURLToPath } = require('url')
 
 const testCVEAggregate = async (...tests) => {
-    const { CVEAggregate } = require(path.join(__dirname, '..', 'lib', 'index.cjs'))
+    const cveLibPath = join(__dirname, '..', 'lib', 'index.cjs')
+    const { CVEAggregate } = require(cveLibPath)
 
     const verbose = true
-    const filepath = path.join(__dirname, 'test_cves.json')
+    const filepath = join(__dirname, 'test_cves.json')
     const cves = new CVEAggregate(filepath, verbose)
     const cveList = ['CVE-2023-35390','CVE-2023-35391','CVE-2023-38180']
 
